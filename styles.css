@@ -1867,6 +1867,11 @@ tbody tr:last-child td {
     color: #fff;
 }
 
+.member-role.collector {
+    background: rgba(156, 39, 176, 0.3);
+    color: #fff;
+}
+
 .member-role.member {
     background: rgba(33, 150, 243, 0.3);
     color: #fff;

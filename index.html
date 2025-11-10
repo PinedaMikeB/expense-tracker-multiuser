@@ -54,6 +54,9 @@
             <button class="tab-button active" onclick="showTab('expenses')">
                 <i class="fas fa-minus-circle"></i> Expenses
             </button>
+            <button class="tab-button" onclick="showTab('income')">
+                <i class="fas fa-plus-circle"></i> Income
+            </button>
             <button class="tab-button" onclick="showTab('pettycash')">
                 <i class="fas fa-wallet"></i> Petty Cash
             </button>
@@ -116,43 +119,6 @@
                 </form>
             </div>
 
-            <div class="form-section">
-                <h2>Add Income/Payment</h2>
-                <form id="income-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="income-description">Description</label>
-                            <input type="text" id="income-description" placeholder="e.g., Salary, Freelance, Reimbursement" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="income-amount">Amount ($)</label>
-                            <input type="number" id="income-amount" step="0.01" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="income-type">Type</label>
-                            <select id="income-type" required>
-                                <option value="">Select Type</option>
-                                <option value="salary">Salary</option>
-                                <option value="freelance">Freelance</option>
-                                <option value="reimbursement">Reimbursement Received</option>
-                                <option value="bonus">Bonus</option>
-                                <option value="investment">Investment Return</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="income-date">Date</label>
-                            <input type="date" id="income-date" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-plus"></i> Add Income
-                    </button>
-                </form>
-            </div>
-
             <div class="table-section">
                 <h2>Recent Expenses</h2>
                 <div class="table-container">
@@ -171,9 +137,48 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- Income Tab -->
+        <div id="income-tab" class="tab-content">
+            <div class="form-section">
+                <h2>Add Income/Payment</h2>
+                <form id="income-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="income-description">Description</label>
+                            <input type="text" id="income-description" placeholder="e.g., Daily Sales, Cash Collections, Customer Payments" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="income-amount">Amount ($)</label>
+                            <input type="number" id="income-amount" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="income-type">Type</label>
+                            <select id="income-type" required>
+                                <option value="">Select Type</option>
+                                <option value="daily-sales">Daily Sales</option>
+                                <option value="cash-collection">Cash Collection</option>
+                                <option value="customer-payment">Customer Payment</option>
+                                <option value="reimbursement">Reimbursement Received</option>
+                                <option value="other-income">Other Income</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="income-date">Date</label>
+                            <input type="date" id="income-date" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add Income
+                    </button>
+                </form>
+            </div>
 
             <div class="table-section">
-                <h2>Recent Income</h2>
+                <h2>Income Records</h2>
                 <div class="table-container">
                     <table id="income-table">
                         <thead>
@@ -544,6 +549,7 @@
                                 <select id="invite-role" required>
                                     <option value="">Select Role</option>
                                     <option value="purchaser">Purchaser (Can print checks)</option>
+                                    <option value="collector">Collector (Add income only)</option>
                                     <option value="member">Member (Add expenses only)</option>
                                 </select>
                             </div>

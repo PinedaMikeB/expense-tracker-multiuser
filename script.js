@@ -2523,6 +2523,10 @@ ExpenseTracker.prototype.pendingInvitations = [];
 ExpenseTracker.prototype.userRole = 'owner'; // owner, purchaser, member
 ExpenseTracker.prototype.isOwner = function() { return this.userRole === 'owner'; };
 ExpenseTracker.prototype.canPrintChecks = function() { return this.userRole === 'owner' || this.userRole === 'purchaser'; };
+ExpenseTracker.prototype.canAddExpenses = function() { return this.userRole === 'owner' || this.userRole === 'purchaser' || this.userRole === 'member'; };
+ExpenseTracker.prototype.canAddIncome = function() { return this.userRole === 'owner' || this.userRole === 'purchaser' || this.userRole === 'collector'; };
+ExpenseTracker.prototype.canManageTeam = function() { return this.userRole === 'owner'; };
+ExpenseTracker.prototype.canViewAnalytics = function() { return true; }; // All roles can view analytics
 
 // Initialize team management
 ExpenseTracker.prototype.initTeamManagement = function() {
@@ -2843,6 +2847,46 @@ ExpenseTracker.prototype.updateRoleBasedUI = function() {
         }
     }
     
+    // Show/hide Expenses tab based on role
+    const expensesTab = document.querySelector('button[onclick="showTab(\'expenses\')"]');
+    if (expensesTab) {
+        if (this.canAddExpenses()) {
+            expensesTab.style.display = 'block';
+        } else {
+            expensesTab.style.display = 'none';
+        }
+    }
+    
+    // Show/hide Reimbursements tab based on role  
+    const reimbursementsTab = document.querySelector('button[onclick="showTab(\'reimbursements\')"]');
+    if (reimbursementsTab) {
+        if (this.canAddExpenses()) {
+            reimbursementsTab.style.display = 'block';
+        } else {
+            reimbursementsTab.style.display = 'none';
+        }
+    }
+    
+    // Show/hide Petty Cash tab based on role
+    const pettyCashTab = document.querySelector('button[onclick="showTab(\'pettycash\')"]');
+    if (pettyCashTab) {
+        if (this.canAddExpenses()) {
+            pettyCashTab.style.display = 'block';
+        } else {
+            pettyCashTab.style.display = 'none';
+        }
+    }
+    
+    // Income tab - show for owners, purchasers, and collectors
+    const incomeTab = document.querySelector('button[onclick="showTab(\'income\')"]');
+    if (incomeTab) {
+        if (this.canAddIncome()) {
+            incomeTab.style.display = 'block';
+        } else {
+            incomeTab.style.display = 'none';
+        }
+    }
+    
     // Add role badge to user info
     const userInfo = document.getElementById('user-email');
     if (userInfo && this.currentUser) {
@@ -2851,11 +2895,16 @@ ExpenseTracker.prototype.updateRoleBasedUI = function() {
     }
     
     // Show/hide team management sections based on role
-    if (!this.isOwner()) {
+    if (!this.canManageTeam()) {
         const inviteSection = document.querySelector('.team-invite-section');
         const pendingSection = document.querySelector('.pending-invites-section');
         if (inviteSection) inviteSection.style.display = 'none';
         if (pendingSection) pendingSection.style.display = 'none';
+    }
+    
+    // Add collector-specific welcome message
+    if (this.userRole === 'collector') {
+        this.showCollectorWelcome();
     }
 };
 
@@ -2929,3 +2978,60 @@ ExpenseTracker.prototype.handleAuthStateChange = function(user) {
 };
 
 console.log('🏪 Team management system loaded');
+// Collector role specific functions
+ExpenseTracker.prototype.showCollectorWelcome = function() {
+    // Show a welcome message specifically for collectors
+    const welcomeHtml = `
+        <div style="background: linear-gradient(135deg, #9c27b0 0%, #e91e63 100%); 
+                    color: white; 
+                    padding: 20px; 
+                    border-radius: 15px; 
+                    margin: 20px 0; 
+                    text-align: center;
+                    box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);">
+            <h3><i class="fas fa-coins"></i> Welcome, Collector!</h3>
+            <p>Your role: Record daily sales, cash collections, and customer payments</p>
+            <p><strong>📊 Use the Income tab to add revenue records</strong></p>
+        </div>
+    `;
+    
+    // Add to the income tab if it exists
+    const incomeTab = document.getElementById('income-tab');
+    if (incomeTab) {
+        const existingWelcome = incomeTab.querySelector('.collector-welcome');
+        if (!existingWelcome) {
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'collector-welcome';
+            welcomeDiv.innerHTML = welcomeHtml;
+            incomeTab.insertBefore(welcomeDiv, incomeTab.firstChild);
+        }
+    }
+};
+
+// Update the tab initialization to show income tab for collectors by default
+ExpenseTracker.prototype.setDefaultTabForRole = function() {
+    if (this.userRole === 'collector') {
+        // Show income tab by default for collectors
+        showTab('income');
+    } else if (this.userRole === 'member') {
+        // Show expenses tab by default for members
+        showTab('expenses');
+    } else {
+        // Owners and purchasers see expenses by default
+        showTab('expenses');
+    }
+};
+
+// Update the init team management to set default tab
+const originalInitTeamManagement = ExpenseTracker.prototype.initTeamManagement;
+ExpenseTracker.prototype.initTeamManagement = function() {
+    // Call original function
+    originalInitTeamManagement.call(this);
+    
+    // Set default tab based on role
+    setTimeout(() => {
+        this.setDefaultTabForRole();
+    }, 500);
+};
+
+console.log('🏪 Collector role functions loaded');
