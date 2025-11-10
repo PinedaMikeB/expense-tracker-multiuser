@@ -2438,6 +2438,39 @@ function showTab(tabName) {
     if (tabName === 'analytics' && window.expenseTracker) {
         window.expenseTracker.renderAnalytics();
     }
+    
+    // Render permissions matrix when permissions tab is shown
+    if (tabName === 'permissions' && window.expenseTracker && window.expenseTracker.isOwner()) {
+        console.log('🔒 Permissions tab activated - rendering matrix');
+        
+        // Force show the permissions tab content
+        const permissionsTab = document.getElementById('permissions-tab');
+        if (permissionsTab) {
+            permissionsTab.style.display = 'block';
+            permissionsTab.style.visibility = 'visible';
+            permissionsTab.style.opacity = '1';
+            permissionsTab.style.height = 'auto';
+        }
+        
+        window.expenseTracker.renderPermissionsMatrix();
+        window.expenseTracker.renderTeamMembersPermissions();
+        
+        // Additional CSS fixes
+        setTimeout(() => {
+            const matrixContainer = document.querySelector('.permissions-matrix-container');
+            const teamOverview = document.querySelector('.team-permissions-overview');
+            
+            if (matrixContainer) {
+                matrixContainer.style.display = 'block';
+                matrixContainer.style.visibility = 'visible';
+            }
+            
+            if (teamOverview) {
+                teamOverview.style.display = 'block';
+                teamOverview.style.visibility = 'visible';
+            }
+        }, 100);
+    }
 }
 
 // Authentication functions
@@ -2529,6 +2562,93 @@ ExpenseTracker.prototype.canManagePettyCash = function() { return this.userRole 
 ExpenseTracker.prototype.canManageTeam = function() { return this.userRole === 'owner'; };
 ExpenseTracker.prototype.canViewAnalytics = function() { return true; }; // All roles can view analytics
 
+// Custom permissions for individual users (new dynamic system)
+ExpenseTracker.prototype.customPermissions = {};
+
+// Default permissions template for all roles
+ExpenseTracker.prototype.defaultPermissions = {
+    'owner': {
+        expenses: true,
+        income: true, 
+        pettycash: true,
+        checkprinting: true,
+        team: true,
+        analytics: true
+    },
+    'purchaser': {
+        expenses: true,
+        income: true,
+        pettycash: true, 
+        checkprinting: true,
+        team: false,
+        analytics: true
+    },
+    'collector': {
+        expenses: false,
+        income: true,
+        pettycash: false,
+        checkprinting: false,
+        team: false,
+        analytics: true
+    },
+    'pettycash-manager': {
+        expenses: false,
+        income: false,
+        pettycash: true,
+        checkprinting: false,
+        team: false,
+        analytics: true
+    },
+    'member': {
+        expenses: true,
+        income: false,
+        pettycash: false,
+        checkprinting: false,
+        team: false,
+        analytics: true
+    }
+};
+
+// Enhanced permission checking with custom permissions support
+ExpenseTracker.prototype.hasPermission = function(userId, permission) {
+    // If no userId provided, check current user
+    if (!userId) {
+        userId = this.currentUser?.uid;
+    }
+    
+    // Check if we have custom permissions for this user
+    if (this.customPermissions[userId]) {
+        return this.customPermissions[userId][permission] || false;
+    }
+    
+    // Fall back to role-based permissions
+    const userRole = userId === this.currentUser?.uid ? this.userRole : this.getUserRole(userId);
+    return this.defaultPermissions[userRole]?.[permission] || false;
+};
+
+// Get user role by ID (helper function)
+ExpenseTracker.prototype.getUserRole = function(userId) {
+    const member = this.teamMembers.find(m => m.id === userId);
+    return member?.role || 'member';
+};
+
+// Updated permission functions to use custom permissions
+ExpenseTracker.prototype.canPrintChecks = function(userId) { 
+    return this.hasPermission(userId, 'checkprinting'); 
+};
+ExpenseTracker.prototype.canAddExpenses = function(userId) { 
+    return this.hasPermission(userId, 'expenses'); 
+};
+ExpenseTracker.prototype.canAddIncome = function(userId) { 
+    return this.hasPermission(userId, 'income'); 
+};
+ExpenseTracker.prototype.canManagePettyCash = function(userId) { 
+    return this.hasPermission(userId, 'pettycash'); 
+};
+ExpenseTracker.prototype.canManageTeam = function(userId) { 
+    return this.hasPermission(userId, 'team'); 
+};
+
 // Initialize team management
 ExpenseTracker.prototype.initTeamManagement = function() {
     console.log('🏪 Initializing team management...');
@@ -2543,6 +2663,12 @@ ExpenseTracker.prototype.initTeamManagement = function() {
     
     // Update UI based on role
     this.updateRoleBasedUI();
+    
+    // Show permissions tab for owners and load permissions
+    this.updatePermissionsTabVisibility();
+    if (this.isOwner()) {
+        this.loadCustomPermissions();
+    }
 };
 
 // Setup team-related event listeners
@@ -3075,3 +3201,401 @@ ExpenseTracker.prototype.showPettyCashManagerWelcome = function() {
 };
 
 console.log('💰 Petty Cash Manager role functions loaded');
+
+// =================================
+// PERMISSIONS MATRIX MANAGEMENT
+// =================================
+
+// Show/hide permissions tab based on user role
+ExpenseTracker.prototype.updatePermissionsTabVisibility = function() {
+    const permissionsTabButton = document.getElementById('permissions-tab-button');
+    if (permissionsTabButton) {
+        if (this.isOwner()) {
+            permissionsTabButton.style.display = 'inline-block';
+            console.log('🔒 Permissions tab made visible for owner');
+            
+            // Force immediate render for testing
+            setTimeout(() => {
+                console.log('🔒 Force rendering permissions matrix...');
+                this.renderPermissionsMatrix();
+                this.renderTeamMembersPermissions();
+            }, 100);
+        } else {
+            permissionsTabButton.style.display = 'none';
+        }
+    } else {
+        console.error('❌ Permissions tab button not found in DOM');
+    }
+};
+
+// Load custom permissions from Firebase
+ExpenseTracker.prototype.loadCustomPermissions = function() {
+    if (!this.currentUser) return;
+
+    const userDocRef = window.db.collection('users').doc(this.currentUser.uid);
+    
+    userDocRef.get().then((doc) => {
+        if (doc.exists && doc.data().customPermissions) {
+            this.customPermissions = doc.data().customPermissions;
+            console.log('📋 Custom permissions loaded:', this.customPermissions);
+            
+            // Re-render the matrix with loaded permissions
+            this.renderPermissionsMatrix();
+            this.renderTeamMembersPermissions();
+        }
+    }).catch((error) => {
+        console.error('❌ Error loading custom permissions:', error);
+    });
+};
+
+// Save custom permissions to Firebase
+ExpenseTracker.prototype.saveCustomPermissions = function() {
+    if (!this.currentUser || !this.isOwner()) return;
+
+    const userDocRef = window.db.collection('users').doc(this.currentUser.uid);
+    
+    userDocRef.update({
+        customPermissions: this.customPermissions,
+        lastPermissionUpdate: new Date().toISOString()
+    }).then(() => {
+        console.log('✅ Custom permissions saved');
+        this.showNotification('Permissions saved successfully!', 'success');
+        this.addPermissionChangeLog('Permissions updated', 'update');
+    }).catch((error) => {
+        console.error('❌ Error saving custom permissions:', error);
+        this.showNotification('Failed to save permissions', 'error');
+    });
+};
+
+// Render the permissions matrix table
+ExpenseTracker.prototype.renderPermissionsMatrix = function() {
+    console.log('🔒 renderPermissionsMatrix called');
+    const matrixBody = document.getElementById('permissions-matrix-body');
+    if (!matrixBody) {
+        console.error('❌ permissions-matrix-body element not found');
+        return;
+    }
+    
+    console.log('🔒 Matrix body element found:', matrixBody);
+
+    const permissions = [
+        { key: 'expenses', name: 'Add Expenses', icon: 'fas fa-minus-circle' },
+        { key: 'income', name: 'Add Income', icon: 'fas fa-plus-circle' },
+        { key: 'pettycash', name: 'Manage Petty Cash', icon: 'fas fa-wallet' },
+        { key: 'checkprinting', name: 'Print Checks', icon: 'fas fa-print' },
+        { key: 'team', name: 'Team Management', icon: 'fas fa-users' },
+        { key: 'analytics', name: 'View Analytics', icon: 'fas fa-chart-line' }
+    ];
+
+    const roles = ['owner', 'purchaser', 'collector', 'pettycash-manager', 'member'];
+
+    let html = '';
+    permissions.forEach(permission => {
+        html += `
+            <tr>
+                <td class="feature-name">
+                    <i class="${permission.icon}"></i>
+                    ${permission.name}
+                </td>`;
+        
+        roles.forEach(role => {
+            const defaultValue = this.defaultPermissions[role][permission.key];
+            const isOwner = role === 'owner';
+            
+            if (isOwner) {
+                html += `
+                    <td class="owner-permission">
+                        <div class="permission-status permission-granted">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </td>`;
+            } else {
+                html += `
+                    <td>
+                        <div class="permission-checkbox-container">
+                            <input type="checkbox" 
+                                   class="permission-checkbox" 
+                                   data-role="${role}" 
+                                   data-permission="${permission.key}"
+                                   ${defaultValue ? 'checked' : ''}
+                                   onchange="expenseTracker.updateRolePermission('${role}', '${permission.key}', this.checked)">
+                        </div>
+                    </td>`;
+            }
+        });
+        
+        html += '</tr>';
+    });
+
+    console.log('🔒 Setting matrix HTML:', html.substring(0, 100) + '...');
+    matrixBody.innerHTML = html;
+    console.log('🔒 Matrix rendered successfully');
+};
+
+// Update a specific role permission
+ExpenseTracker.prototype.updateRolePermission = function(role, permission, granted) {
+    // Initialize default permissions for role if not exists
+    if (!this.customPermissions[role]) {
+        this.customPermissions[role] = { ...this.defaultPermissions[role] };
+    }
+    
+    this.customPermissions[role][permission] = granted;
+    
+    console.log(`🔄 Permission updated: ${role}.${permission} = ${granted}`);
+    
+    // Update team members permissions display
+    this.renderTeamMembersPermissions();
+    
+    // Add to changelog
+    const action = granted ? 'granted' : 'revoked';
+    this.addPermissionChangeLog(`${action} ${permission} for ${role}`, action);
+};
+
+// Render team members with their permissions
+ExpenseTracker.prototype.renderTeamMembersPermissions = function() {
+    console.log('🔒 renderTeamMembersPermissions called');
+    const container = document.getElementById('team-members-permissions');
+    if (!container) {
+        console.error('❌ team-members-permissions element not found');
+        return;
+    }
+    
+    console.log('🔒 Team members container found:', container);
+
+    // Get all team members including owner (always show owner even if no other members)
+    const allMembers = [
+        { 
+            email: this.currentUser?.email || 'owner@example.com', 
+            role: 'owner', 
+            name: 'You (Owner)' 
+        }
+    ];
+    
+    // Add actual team members if they exist
+    if (this.teamMembers && this.teamMembers.length > 0) {
+        allMembers.push(...this.teamMembers);
+    } else {
+        // Show example roles when no team members exist yet
+        allMembers.push(
+            { email: 'purchaser@example.com', role: 'purchaser', name: 'Purchaser Role', isExample: true },
+            { email: 'collector@example.com', role: 'collector', name: 'Collector Role', isExample: true },
+            { email: 'manager@example.com', role: 'pettycash-manager', name: 'Petty Cash Manager', isExample: true },
+            { email: 'member@example.com', role: 'member', name: 'Member Role', isExample: true }
+        );
+    }
+
+    let html = '';
+    allMembers.forEach(member => {
+        const permissions = this.getEffectivePermissions(member.role);
+        const grantedCount = Object.values(permissions).filter(p => p).length;
+        const totalCount = Object.keys(permissions).length;
+        const isExample = member.isExample;
+        
+        html += `
+            <div class="team-member-permission-card ${isExample ? 'example-member' : ''}">
+                <div class="member-permission-header">
+                    <div class="member-permission-info">
+                        <h4>${member.name || member.email} ${isExample ? '(Preview)' : ''}</h4>
+                        <small>${isExample ? 'Example role preview' : member.email}</small>
+                    </div>
+                    <div class="member-permission-role">${member.role.replace('-', ' ')}</div>
+                </div>
+                <div class="member-permission-stats">
+                    <div class="permission-stat">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${grantedCount}/${totalCount} permissions</span>
+                    </div>
+                    <div class="permission-stat">
+                        <i class="fas fa-calendar"></i>
+                        <span>${isExample ? 'Preview' : 'Active'}</span>
+                    </div>
+                </div>
+            </div>`;
+    });
+
+    container.innerHTML = html;
+};
+
+// Get effective permissions for a role (custom or default)
+ExpenseTracker.prototype.getEffectivePermissions = function(role) {
+    if (this.customPermissions[role]) {
+        return this.customPermissions[role];
+    }
+    return this.defaultPermissions[role] || {};
+};
+
+// Save all permissions changes
+ExpenseTracker.prototype.saveAllPermissions = function() {
+    this.saveCustomPermissions();
+};
+
+// Reset permissions to defaults
+ExpenseTracker.prototype.resetToDefaultPermissions = function() {
+    if (confirm('Are you sure you want to reset all permissions to default values? This cannot be undone.')) {
+        this.customPermissions = {};
+        this.renderPermissionsMatrix();
+        this.renderTeamMembersPermissions();
+        this.saveCustomPermissions();
+        this.addPermissionChangeLog('Reset all permissions to defaults', 'reset');
+    }
+};
+
+// Add entry to permission change log
+ExpenseTracker.prototype.addPermissionChangeLog = function(description, action) {
+    const logContainer = document.getElementById('permissions-changelog');
+    if (!logContainer) return;
+
+    const iconMap = {
+        'granted': 'fas fa-check-circle',
+        'revoked': 'fas fa-times-circle', 
+        'update': 'fas fa-edit',
+        'reset': 'fas fa-undo'
+    };
+
+    const now = new Date();
+    const timeString = now.toLocaleString();
+
+    const logEntry = document.createElement('div');
+    logEntry.className = 'changelog-item';
+    logEntry.innerHTML = `
+        <div class="changelog-icon">
+            <i class="${iconMap[action] || 'fas fa-info-circle'}"></i>
+        </div>
+        <div class="changelog-content">
+            <div>${description}</div>
+            <div class="changelog-time">${timeString}</div>
+        </div>
+    `;
+
+    // Remove "no changes" message if it exists
+    const noChanges = logContainer.querySelector('.no-changes');
+    if (noChanges) {
+        noChanges.remove();
+    }
+
+    // Add new entry at the top
+    logContainer.insertBefore(logEntry, logContainer.firstChild);
+
+    // Keep only last 10 entries
+    const entries = logContainer.querySelectorAll('.changelog-item');
+    if (entries.length > 10) {
+        entries[entries.length - 1].remove();
+    }
+};
+
+console.log('🔒 Permissions matrix system loaded');
+
+// Debug function for testing permissions matrix
+ExpenseTracker.prototype.debugPermissionsMatrix = function() {
+    console.log('🔍 Debug: Testing permissions matrix...');
+    console.log('🔍 Current user role:', this.userRole);
+    console.log('🔍 Is owner:', this.isOwner());
+    console.log('🔍 Default permissions:', this.defaultPermissions);
+    console.log('🔍 Custom permissions:', this.customPermissions);
+    
+    // Check DOM elements
+    console.log('🔍 Permissions tab:', document.getElementById('permissions-tab'));
+    console.log('🔍 Matrix body:', document.getElementById('permissions-matrix-body'));
+    console.log('🔍 Team container:', document.getElementById('team-members-permissions'));
+    
+    // Force render the matrix for testing
+    this.renderPermissionsMatrix();
+    this.renderTeamMembersPermissions();
+    
+    console.log('🔍 Matrix render complete');
+};
+
+// Global debug function 
+window.debugPermissions = function() {
+    if (window.expenseTracker) {
+        window.expenseTracker.debugPermissionsMatrix();
+    } else {
+        console.error('❌ expenseTracker not found');
+    }
+};
+
+// Emergency manual fix for blank permissions tab
+window.forceShowPermissions = function() {
+    console.log('🚨 Emergency fix: Forcing permissions tab to show...');
+    
+    // 1. Force show permissions tab
+    const permTab = document.getElementById('permissions-tab');
+    if (permTab) {
+        permTab.style.display = 'block';
+        permTab.style.visibility = 'visible';
+        permTab.style.opacity = '1';
+        permTab.style.height = 'auto';
+        permTab.classList.add('active');
+        console.log('✅ Permissions tab forced visible');
+    }
+    
+    // 2. Force show all containers
+    ['.permissions-section', '.permissions-matrix-container', '.team-permissions-overview', '.permissions-actions', '.permissions-log'].forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.style.display = 'block';
+            element.style.visibility = 'visible';
+            element.style.opacity = '1';
+        }
+    });
+    
+    // 3. Force render content
+    if (window.expenseTracker) {
+        expenseTracker.renderPermissionsMatrix();
+        expenseTracker.renderTeamMembersPermissions();
+    }
+    
+    // 4. Manual HTML injection as last resort
+    setTimeout(() => {
+        const matrixBody = document.getElementById('permissions-matrix-body');
+        if (matrixBody && matrixBody.innerHTML.trim() === '') {
+            matrixBody.innerHTML = `
+                <tr>
+                    <td class="feature-name"><i class="fas fa-minus-circle"></i> Add Expenses</td>
+                    <td class="owner-permission"><div class="permission-status permission-granted"><i class="fas fa-crown"></i></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" checked class="permission-checkbox"></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" class="permission-checkbox"></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" class="permission-checkbox"></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" checked class="permission-checkbox"></div></td>
+                </tr>
+                <tr>
+                    <td class="feature-name"><i class="fas fa-plus-circle"></i> Add Income</td>
+                    <td class="owner-permission"><div class="permission-status permission-granted"><i class="fas fa-crown"></i></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" checked class="permission-checkbox"></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" checked class="permission-checkbox"></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" class="permission-checkbox"></div></td>
+                    <td><div class="permission-checkbox-container"><input type="checkbox" class="permission-checkbox"></div></td>
+                </tr>
+            `;
+            console.log('✅ Emergency matrix HTML injected');
+        }
+        
+        const teamContainer = document.getElementById('team-members-permissions');
+        if (teamContainer && teamContainer.innerHTML.trim() === '') {
+            teamContainer.innerHTML = `
+                <div class="team-member-permission-card">
+                    <div class="member-permission-header">
+                        <div class="member-permission-info">
+                            <h4>You (Owner)</h4>
+                            <small>pinedamikeb@yahoo.com</small>
+                        </div>
+                        <div class="member-permission-role">owner</div>
+                    </div>
+                    <div class="member-permission-stats">
+                        <div class="permission-stat">
+                            <i class="fas fa-check-circle"></i>
+                            <span>6/6 permissions</span>
+                        </div>
+                        <div class="permission-stat">
+                            <i class="fas fa-calendar"></i>
+                            <span>Active</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            console.log('✅ Emergency team HTML injected');
+        }
+    }, 200);
+    
+    console.log('🚨 Emergency fix complete!');
+};

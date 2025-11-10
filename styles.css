@@ -2028,3 +2028,375 @@ tbody tr:last-child td {
         justify-content: flex-end;
     }
 }
+
+/* =================================
+   PERMISSIONS MATRIX STYLES
+   ================================= */
+
+/* Permissions Section */
+.permissions-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Force visibility for permissions tab */
+#permissions-tab {
+    display: block !important;
+}
+
+#permissions-tab.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+}
+
+.permissions-description {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    font-size: 0.95rem;
+}
+
+.permissions-description i {
+    margin-right: 8px;
+    color: #fff3cd;
+}
+
+/* Team Members Overview */
+.team-permissions-overview {
+    margin-bottom: 30px;
+}
+
+.team-members-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.team-member-permission-card {
+    background: white;
+    border: 2px solid #e0e6ed;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.team-member-permission-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+
+.member-permission-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.member-permission-info h4 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+
+.member-permission-role {
+    background: #667eea;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.member-permission-stats {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+    color: #4a5568;
+}
+
+.permission-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.permission-stat i {
+    color: #38a169;
+}
+
+.permission-stat.denied i {
+    color: #e53e3e;
+}
+
+/* Permissions Matrix Table */
+.permissions-matrix-container {
+    margin: 30px 0;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    overflow-x: auto;
+    display: block !important;
+    visibility: visible !important;
+}
+
+.permissions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    display: table !important;
+    visibility: visible !important;
+}
+
+.team-permissions-overview {
+    margin-bottom: 30px;
+    display: block !important;
+    visibility: visible !important;
+}
+
+.permissions-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.permissions-table th.feature-column {
+    text-align: left;
+    min-width: 200px;
+}
+
+.permissions-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.permissions-table tbody tr:hover {
+    background: #f7fafc;
+}
+
+.feature-name {
+    font-weight: 600;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feature-name i {
+    color: #667eea;
+    width: 16px;
+}
+
+/* Permission Checkboxes */
+.permission-checkbox-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.permission-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #667eea;
+    transform: scale(1.2);
+    transition: transform 0.2s ease;
+}
+
+.permission-checkbox:hover {
+    transform: scale(1.3);
+}
+
+.permission-checkbox:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.owner-permission {
+    background: #f0fff4;
+}
+
+.owner-permission .permission-checkbox {
+    pointer-events: none;
+}
+
+/* Permission Status Icons */
+.permission-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+}
+
+.permission-granted {
+    background: #c6f6d5;
+    color: #2f855a;
+}
+
+.permission-denied {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+/* Quick Actions */
+.permissions-actions {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.actions-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.actions-buttons .btn {
+    min-width: 160px;
+}
+
+/* Permission Change Log */
+.permissions-log {
+    margin-top: 30px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.changelog-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.changelog-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-left: 4px solid #667eea;
+    background: #f8fafc;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.changelog-icon {
+    color: #667eea;
+    font-size: 1rem;
+}
+
+.changelog-content {
+    flex: 1;
+}
+
+.changelog-time {
+    color: #718096;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.no-changes {
+    text-align: center;
+    color: #a0aec0;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Mobile Responsiveness for Permissions */
+@media (max-width: 768px) {
+    .permissions-matrix-container {
+        padding: 15px;
+    }
+    
+    .permissions-table {
+        font-size: 0.8rem;
+    }
+    
+    .permissions-table th,
+    .permissions-table td {
+        padding: 8px 6px;
+    }
+    
+    .feature-name {
+        font-size: 0.85rem;
+    }
+    
+    .actions-buttons {
+        justify-content: center;
+    }
+    
+    .actions-buttons .btn {
+        min-width: 140px;
+        font-size: 0.85rem;
+    }
+    
+    .team-members-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Force visibility for all permissions elements */
+.permissions-section * {
+    visibility: visible !important;
+}
+
+.permissions-matrix-container * {
+    visibility: visible !important;
+}
+
+.team-permissions-overview * {
+    visibility: visible !important;
+}
+
+.permissions-actions * {
+    visibility: visible !important;
+}
+
+.permissions-log * {
+    visibility: visible !important;
+}
+
+/* Example member card styling */
+.example-member {
+    opacity: 0.8;
+    border-style: dashed !important;
+    border-color: #cbd5e0 !important;
+}
+
+.example-member .member-permission-role {
+    background: #a0aec0;
+    color: white;
+}
+
+.example-member .member-permission-info h4 {
+    color: #718096;
+}
+
+.example-member:hover {
+    border-color: #a0aec0;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

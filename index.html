@@ -75,6 +75,9 @@
             <button class="tab-button" onclick="showTab('team')">
                 <i class="fas fa-users"></i> Team
             </button>
+            <button class="tab-button" id="permissions-tab-button" onclick="showTab('permissions')" style="display: none;">
+                <i class="fas fa-shield-alt"></i> Permissions
+            </button>
         </div>
 
         <!-- Expenses Tab -->
@@ -578,6 +581,71 @@
                     <h3>⏳ Pending Invitations</h3>
                     <div id="pending-invitations" class="invites-list">
                         <!-- Pending invitations will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permissions Management Tab (Owner Only) -->
+        <div id="permissions-tab" class="tab-content" style="display: none;">
+            <div class="permissions-section">
+                <h2><i class="fas fa-shield-alt"></i> Role Permissions Matrix</h2>
+                <p class="permissions-description">
+                    <i class="fas fa-info-circle"></i> 
+                    Manage what each team member can access. Check/uncheck permissions for each role.
+                </p>
+                
+                <!-- Current Team Members -->
+                <div class="team-permissions-overview">
+                    <h3><i class="fas fa-users"></i> Team Members</h3>
+                    <div id="team-members-permissions" class="team-members-list">
+                        <!-- Team members with role permissions will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Permissions Matrix -->
+                <div class="permissions-matrix-container">
+                    <h3><i class="fas fa-table"></i> Permissions Matrix</h3>
+                    <div class="permissions-matrix">
+                        <table class="permissions-table">
+                            <thead>
+                                <tr>
+                                    <th class="feature-column">Feature</th>
+                                    <th class="role-column">Owner</th>
+                                    <th class="role-column">Purchaser</th>
+                                    <th class="role-column">Collector</th>
+                                    <th class="role-column">Petty Cash Manager</th>
+                                    <th class="role-column">Member</th>
+                                </tr>
+                            </thead>
+                            <tbody id="permissions-matrix-body">
+                                <!-- Matrix will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="permissions-actions">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                    <div class="actions-buttons">
+                        <button class="btn btn-primary" onclick="expenseTracker.saveAllPermissions()">
+                            <i class="fas fa-save"></i> Save All Changes
+                        </button>
+                        <button class="btn btn-secondary" onclick="expenseTracker.resetToDefaultPermissions()">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                        <button class="btn btn-success" onclick="showTab('team')">
+                            <i class="fas fa-users"></i> Manage Team Members
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Permission Change Log -->
+                <div class="permissions-log">
+                    <h3><i class="fas fa-history"></i> Recent Permission Changes</h3>
+                    <div id="permissions-changelog" class="changelog-list">
+                        <p class="no-changes">No recent permission changes</p>
                     </div>
                 </div>
             </div>

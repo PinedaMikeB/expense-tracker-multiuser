@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permissions Matrix Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f7fa;
+        }
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .debug-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .debug-button:hover {
+            background: #5a67d8;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        .info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔒 Permissions Matrix Debug Tool</h1>
+        <p>Use this page to debug permissions matrix issues in your expense tracker app.</p>
+        
+        <div class="debug-section">
+            <h2>1. Debug Commands</h2>
+            <p>Open your main expense tracker app, then run these commands in the console:</p>
+            <button class="debug-button" onclick="copyToClipboard('debugPermissions()')">
+                Copy: debugPermissions()
+            </button>
+            <button class="debug-button" onclick="copyToClipboard('expenseTracker.debugPermissionsMatrix()')">
+                Copy: expenseTracker.debugPermissionsMatrix()
+            </button>
+            <button class="debug-button" onclick="copyToClipboard('expenseTracker.renderPermissionsMatrix()')">
+                Copy: Force Render Matrix
+            </button>
+        </div>
+
+        <div class="debug-section">
+            <h2>2. Check DOM Elements</h2>
+            <button class="debug-button" onclick="copyToClipboard('document.getElementById(\'permissions-tab\')')">
+                Copy: Check Permissions Tab
+            </button>
+            <button class="debug-button" onclick="copyToClipboard('document.getElementById(\'permissions-matrix-body\')')">
+                Copy: Check Matrix Body
+            </button>
+            <button class="debug-button" onclick="copyToClipboard('document.getElementById(\'team-members-permissions\')')">
+                Copy: Check Team Container
+            </button>
+        </div>
+
+        <div class="debug-section">
+            <h2>3. Force Render Commands</h2>
+            <button class="debug-button" onclick="copyToClipboard('showTab(\'permissions\')')">
+                Copy: Show Permissions Tab
+            </button>
+            <button class="debug-button" onclick="copyToClipboard('expenseTracker.updatePermissionsTabVisibility()')">
+                Copy: Update Tab Visibility
+            </button>
+        </div>
+
+        <div class="debug-section">
+            <h2>4. Check User Role</h2>
+            <button class="debug-button" onclick="copyToClipboard('expenseTracker.userRole')">
+                Copy: Check User Role
+            </button>
+            <button class="debug-button" onclick="copyToClipboard('expenseTracker.isOwner()')">
+                Copy: Check Is Owner
+            </button>
+        </div>
+
+        <div class="status info" id="status">
+            Click any button above to copy the command to your clipboard, then paste it in the browser console of your expense tracker app.
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const status = document.getElementById('status');
+                status.className = 'status success';
+                status.textContent = `✅ Copied to clipboard: ${text}`;
+                
+                setTimeout(() => {
+                    status.className = 'status info';
+                    status.textContent = 'Click any button above to copy the command to your clipboard.';
+                }, 3000);
+            }).catch(err => {
+                const status = document.getElementById('status');
+                status.className = 'status error';
+                status.textContent = `❌ Failed to copy: ${err}`;
+            });
+        }
+    </script>
+</body>
+</html>
