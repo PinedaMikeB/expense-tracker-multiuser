@@ -2525,6 +2525,7 @@ ExpenseTracker.prototype.isOwner = function() { return this.userRole === 'owner'
 ExpenseTracker.prototype.canPrintChecks = function() { return this.userRole === 'owner' || this.userRole === 'purchaser'; };
 ExpenseTracker.prototype.canAddExpenses = function() { return this.userRole === 'owner' || this.userRole === 'purchaser' || this.userRole === 'member'; };
 ExpenseTracker.prototype.canAddIncome = function() { return this.userRole === 'owner' || this.userRole === 'purchaser' || this.userRole === 'collector'; };
+ExpenseTracker.prototype.canManagePettyCash = function() { return this.userRole === 'owner' || this.userRole === 'purchaser' || this.userRole === 'pettycash-manager'; };
 ExpenseTracker.prototype.canManageTeam = function() { return this.userRole === 'owner'; };
 ExpenseTracker.prototype.canViewAnalytics = function() { return true; }; // All roles can view analytics
 
@@ -2870,7 +2871,7 @@ ExpenseTracker.prototype.updateRoleBasedUI = function() {
     // Show/hide Petty Cash tab based on role
     const pettyCashTab = document.querySelector('button[onclick="showTab(\'pettycash\')"]');
     if (pettyCashTab) {
-        if (this.canAddExpenses()) {
+        if (this.canManagePettyCash()) {
             pettyCashTab.style.display = 'block';
         } else {
             pettyCashTab.style.display = 'none';
@@ -2905,6 +2906,11 @@ ExpenseTracker.prototype.updateRoleBasedUI = function() {
     // Add collector-specific welcome message
     if (this.userRole === 'collector') {
         this.showCollectorWelcome();
+    }
+    
+    // Add petty cash manager-specific welcome message  
+    if (this.userRole === 'pettycash-manager') {
+        this.showPettyCashManagerWelcome();
     }
 };
 
@@ -3008,11 +3014,14 @@ ExpenseTracker.prototype.showCollectorWelcome = function() {
     }
 };
 
-// Update the tab initialization to show income tab for collectors by default
+// Update the tab initialization to show appropriate tab for each role
 ExpenseTracker.prototype.setDefaultTabForRole = function() {
     if (this.userRole === 'collector') {
         // Show income tab by default for collectors
         showTab('income');
+    } else if (this.userRole === 'pettycash-manager') {
+        // Show petty cash tab by default for petty cash managers
+        showTab('pettycash');
     } else if (this.userRole === 'member') {
         // Show expenses tab by default for members
         showTab('expenses');
@@ -3035,3 +3044,34 @@ ExpenseTracker.prototype.initTeamManagement = function() {
 };
 
 console.log('🏪 Collector role functions loaded');
+// Petty Cash Manager role specific functions
+ExpenseTracker.prototype.showPettyCashManagerWelcome = function() {
+    // Show a welcome message specifically for petty cash managers
+    const welcomeHtml = `
+        <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); 
+                    color: white; 
+                    padding: 20px; 
+                    border-radius: 15px; 
+                    margin: 20px 0; 
+                    text-align: center;
+                    box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);">
+            <h3><i class="fas fa-wallet"></i> Welcome, Petty Cash Manager!</h3>
+            <p>Your role: Manage petty cash fund and small cash transactions</p>
+            <p><strong>💰 Use this tab to record petty cash withdrawals and deposits</strong></p>
+        </div>
+    `;
+    
+    // Add to the petty cash tab if it exists
+    const pettyCashTab = document.getElementById('pettycash-tab');
+    if (pettyCashTab) {
+        const existingWelcome = pettyCashTab.querySelector('.pettycash-manager-welcome');
+        if (!existingWelcome) {
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'pettycash-manager-welcome';
+            welcomeDiv.innerHTML = welcomeHtml;
+            pettyCashTab.insertBefore(welcomeDiv, pettyCashTab.firstChild);
+        }
+    }
+};
+
+console.log('💰 Petty Cash Manager role functions loaded');

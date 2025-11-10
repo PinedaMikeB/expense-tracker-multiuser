@@ -1872,6 +1872,11 @@ tbody tr:last-child td {
     color: #fff;
 }
 
+.member-role.pettycash-manager {
+    background: rgba(255, 152, 0, 0.3);
+    color: #fff;
+}
+
 .member-role.member {
     background: rgba(33, 150, 243, 0.3);
     color: #fff;
