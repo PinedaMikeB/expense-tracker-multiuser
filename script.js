@@ -2412,8 +2412,11 @@ ExpenseTracker.prototype.closeCheckPreview = function() {
 
 // Global functions for HTML onclick events
 function showTab(tabName) {
+    console.log('🔄 Switching to tab:', tabName);
+    
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
         tab.classList.remove('active');
     });
 
@@ -2425,7 +2428,11 @@ function showTab(tabName) {
     // Show selected tab
     const tabElement = document.getElementById(`${tabName}-tab`);
     if (tabElement) {
+        tabElement.style.display = 'block';
         tabElement.classList.add('active');
+        console.log('✅ Tab visible:', tabName);
+    } else {
+        console.error('❌ Tab not found:', tabName + '-tab');
     }
     
     // Add active class to clicked button
@@ -2437,6 +2444,12 @@ function showTab(tabName) {
     // Refresh analytics when analytics tab is shown
     if (tabName === 'analytics' && window.expenseTracker) {
         window.expenseTracker.renderAnalytics();
+    }
+    
+    // Load customers when customers tab is shown
+    if (tabName === 'customers' && window.customerManager) {
+        console.log('👥 Customers tab activated - loading customers');
+        customerManager.loadCustomers();
     }
     
     // Render permissions matrix when permissions tab is shown
@@ -3599,3 +3612,594 @@ window.forceShowPermissions = function() {
     
     console.log('🚨 Emergency fix complete!');
 };
+
+
+// ============================================
+// CUSTOMER MANAGEMENT SYSTEM
+// ============================================
+
+const customerManager = {
+    customers: [],
+    filteredCustomers: [],
+    currentCustomerId: null,
+    csvData: null,
+
+    // Initialize customer manager
+    init() {
+        console.log('🔧 Initializing Customer Manager...');
+        this.setupEventListeners();
+        this.loadCustomers();
+    },
+
+    // Setup event listeners
+    setupEventListeners() {
+        // Customer form submit
+        const customerForm = document.getElementById('customer-form');
+        if (customerForm) {
+            customerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveCustomer();
+            });
+        }
+
+        // CSV file input
+        const csvInput = document.getElementById('csv-file-input');
+        if (csvInput) {
+            csvInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        }
+    },
+
+    // Load customers from Firebase
+    async loadCustomers() {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            console.log('No user logged in');
+            return;
+        }
+
+        try {
+            const snapshot = await db.collection('customers')
+                .doc(user.uid)
+                .collection('customerList')
+                .orderBy('companyName')
+                .get();
+
+            this.customers = [];
+            snapshot.forEach(doc => {
+                this.customers.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            this.filteredCustomers = [...this.customers];
+            this.displayCustomers();
+            this.updateCustomerCount();
+            console.log(`✅ Loaded ${this.customers.length} customers`);
+        } catch (error) {
+            console.error('Error loading customers:', error);
+            this.showNotification('Error loading customers', 'error');
+        }
+    },
+
+    // Display customers in table
+    displayCustomers() {
+        const tbody = document.getElementById('customers-tbody');
+        if (!tbody) return;
+
+        if (this.filteredCustomers.length === 0) {
+            tbody.innerHTML = `
+                <tr class="empty-state">
+                    <td colspan="8">
+                        <i class="fas fa-inbox"></i>
+                        <p>No customers found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = this.filteredCustomers.map(customer => `
+            <tr>
+                <td>${this.escapeHtml(customer.companyId || '')}</td>
+                <td><strong>${this.escapeHtml(customer.companyName)}</strong></td>
+                <td>${this.escapeHtml(customer.branchDepartment || '')}</td>
+                <td>${this.escapeHtml(customer.contactPerson || '')}</td>
+                <td>${this.escapeHtml(customer.email || '')}</td>
+                <td>${this.escapeHtml(customer.machines || 'N/A')}</td>
+                <td>
+                    <span class="status-badge ${customer.status || 'active'}">
+                        ${(customer.status || 'active').toUpperCase()}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="customerManager.editCustomer('${customer.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="customerManager.deleteCustomer('${customer.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    // Show add customer modal
+    showAddCustomerModal() {
+        this.currentCustomerId = null;
+        document.getElementById('customer-modal-title').textContent = 'Add Customer';
+        document.getElementById('customer-form').reset();
+        document.getElementById('customer-id').value = '';
+        document.getElementById('customer-status').value = 'active';
+        document.getElementById('customer-modal').style.display = 'block';
+    },
+
+    // Edit customer
+    async editCustomer(customerId) {
+        const customer = this.customers.find(c => c.id === customerId);
+        if (!customer) return;
+
+        this.currentCustomerId = customerId;
+        document.getElementById('customer-modal-title').textContent = 'Edit Customer';
+        document.getElementById('customer-id').value = customer.id;
+        document.getElementById('customer-company-id').value = customer.companyId || '';
+        document.getElementById('customer-company-name').value = customer.companyName || '';
+        document.getElementById('customer-address').value = customer.address || '';
+        document.getElementById('customer-contact-person').value = customer.contactPerson || '';
+        document.getElementById('customer-contact-number').value = customer.contactNumber || '';
+        document.getElementById('customer-email').value = customer.email || '';
+        document.getElementById('customer-branch').value = customer.branchDepartment || '';
+        document.getElementById('customer-machines').value = customer.machines || '';
+        document.getElementById('customer-status').value = customer.status || 'active';
+        document.getElementById('customer-modal').style.display = 'block';
+    },
+
+    // Save customer (create or update)
+    async saveCustomer() {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            this.showNotification('Please log in first', 'error');
+            return;
+        }
+
+        const customerData = {
+            companyId: document.getElementById('customer-company-id').value.trim(),
+            companyName: document.getElementById('customer-company-name').value.trim(),
+            address: document.getElementById('customer-address').value.trim(),
+            contactPerson: document.getElementById('customer-contact-person').value.trim(),
+            contactNumber: document.getElementById('customer-contact-number').value.trim(),
+            email: document.getElementById('customer-email').value.trim(),
+            branchDepartment: document.getElementById('customer-branch').value.trim(),
+            machines: document.getElementById('customer-machines').value.trim(),
+            status: document.getElementById('customer-status').value,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+            if (this.currentCustomerId) {
+                // Update existing
+                await db.collection('customers')
+                    .doc(user.uid)
+                    .collection('customerList')
+                    .doc(this.currentCustomerId)
+                    .update(customerData);
+                this.showNotification('Customer updated successfully', 'success');
+            } else {
+                // Create new
+                customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await db.collection('customers')
+                    .doc(user.uid)
+                    .collection('customerList')
+                    .add(customerData);
+                this.showNotification('Customer added successfully', 'success');
+            }
+
+            this.closeCustomerModal();
+            this.loadCustomers();
+        } catch (error) {
+            console.error('Error saving customer:', error);
+            this.showNotification('Error saving customer', 'error');
+        }
+    },
+
+    // Delete customer
+    async deleteCustomer(customerId) {
+        if (!confirm('Are you sure you want to delete this customer?')) return;
+
+        const user = firebase.auth().currentUser;
+        if (!user) return;
+
+        try {
+            await db.collection('customers')
+                .doc(user.uid)
+                .collection('customerList')
+                .doc(customerId)
+                .delete();
+            
+            this.showNotification('Customer deleted successfully', 'success');
+            this.loadCustomers();
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            this.showNotification('Error deleting customer', 'error');
+        }
+    },
+
+    // Search customers
+    searchCustomers(query) {
+        query = query.toLowerCase().trim();
+        
+        if (!query) {
+            this.filteredCustomers = [...this.customers];
+        } else {
+            this.filteredCustomers = this.customers.filter(customer => 
+                (customer.companyName && customer.companyName.toLowerCase().includes(query)) ||
+                (customer.companyId && customer.companyId.toLowerCase().includes(query)) ||
+                (customer.contactPerson && customer.contactPerson.toLowerCase().includes(query)) ||
+                (customer.email && customer.email.toLowerCase().includes(query)) ||
+                (customer.branchDepartment && customer.branchDepartment.toLowerCase().includes(query))
+            );
+        }
+
+        this.displayCustomers();
+        this.updateCustomerCount();
+    },
+
+    // Filter customers by status
+    filterCustomers() {
+        const statusFilter = document.getElementById('customer-status-filter').value;
+        const searchQuery = document.getElementById('customer-search').value;
+
+        if (statusFilter === 'all') {
+            this.filteredCustomers = [...this.customers];
+        } else {
+            this.filteredCustomers = this.customers.filter(c => c.status === statusFilter);
+        }
+
+        // Apply search if exists
+        if (searchQuery) {
+            this.searchCustomers(searchQuery);
+        } else {
+            this.displayCustomers();
+            this.updateCustomerCount();
+        }
+    },
+
+    // Update customer count
+    updateCustomerCount() {
+        const countEl = document.getElementById('customer-count');
+        if (countEl) {
+            countEl.textContent = this.filteredCustomers.length;
+        }
+    },
+
+    // Close customer modal
+    closeCustomerModal() {
+        document.getElementById('customer-modal').style.display = 'none';
+    },
+
+    // Show import modal
+    showImportModal() {
+        document.getElementById('import-modal').style.display = 'block';
+        document.getElementById('import-preview').style.display = 'none';
+        document.getElementById('import-results').style.display = 'none';
+        document.getElementById('file-name-display').textContent = '';
+        this.csvData = null;
+    },
+
+    // Close import modal
+    closeImportModal() {
+        document.getElementById('import-modal').style.display = 'none';
+    },
+
+    // Handle file select
+    handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.csv')) {
+            this.showNotification('Please select a CSV file', 'error');
+            return;
+        }
+
+        document.getElementById('file-name-display').textContent = `Selected: ${file.name}`;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.parseCSV(e.target.result);
+        };
+        reader.readAsText(file);
+    },
+
+    // Parse CSV content
+    parseCSV(csvText) {
+        try {
+            const lines = csvText.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                this.showNotification('CSV file is empty or invalid', 'error');
+                return;
+            }
+
+            // Parse header
+            const headers = this.parseCSVLine(lines[0]);
+            
+            // Parse data rows
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = this.parseCSVLine(lines[i]);
+                if (values.length === 0) continue;
+                
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header.trim()] = this.cleanValue(values[index]);
+                });
+                data.push(row);
+            }
+
+            this.csvData = data;
+            this.showPreview(data.slice(0, 5));
+            console.log(`✅ Parsed ${data.length} rows from CSV`);
+        } catch (error) {
+            console.error('CSV parsing error:', error);
+            this.showNotification('Error parsing CSV file', 'error');
+        }
+    },
+
+    // Parse CSV line (handles quoted commas)
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current);
+        
+        return result.map(val => val.replace(/^"|"$/g, '').trim());
+    },
+
+    // Clean value (handle NULL, null, empty)
+    cleanValue(value) {
+        if (!value || value === 'null' || value === 'NULL' || value === 'undefined') {
+            return '';
+        }
+        return value.trim();
+    },
+
+    // Show preview of CSV data
+    showPreview(data) {
+        const previewEl = document.getElementById('import-preview');
+        const contentEl = document.getElementById('preview-content');
+        
+        if (!data || data.length === 0) {
+            contentEl.innerHTML = '<p>No data to preview</p>';
+            return;
+        }
+
+        let html = '<table class="preview-table" style="width: 100%; border-collapse: collapse;">';
+        html += '<thead><tr>';
+        html += '<th style="border: 1px solid #e2e8f0; padding: 8px; background: #f7fafc;">Company ID</th>';
+        html += '<th style="border: 1px solid #e2e8f0; padding: 8px; background: #f7fafc;">Company Name</th>';
+        html += '<th style="border: 1px solid #e2e8f0; padding: 8px; background: #f7fafc;">Branch/Dept</th>';
+        html += '<th style="border: 1px solid #e2e8f0; padding: 8px; background: #f7fafc;">Contact</th>';
+        html += '</tr></thead><tbody>';
+
+        data.forEach(row => {
+            html += '<tr>';
+            html += `<td style="border: 1px solid #e2e8f0; padding: 8px;">${this.escapeHtml(row['Company ID'] || '')}</td>`;
+            html += `<td style="border: 1px solid #e2e8f0; padding: 8px;"><strong>${this.escapeHtml(row['Company Name'] || '')}</strong></td>`;
+            html += `<td style="border: 1px solid #e2e8f0; padding: 8px;">${this.escapeHtml(row['Branch/Department'] || '')}</td>`;
+            html += `<td style="border: 1px solid #e2e8f0; padding: 8px;">${this.escapeHtml(row['Contact Person'] || '')}</td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        contentEl.innerHTML = html;
+        previewEl.style.display = 'block';
+    },
+
+    // Execute import
+    async executeImport() {
+        if (!this.csvData || this.csvData.length === 0) {
+            this.showNotification('No data to import', 'error');
+            return;
+        }
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            this.showNotification('Please log in first', 'error');
+            return;
+        }
+
+        const resultsEl = document.getElementById('import-results');
+        const contentEl = document.getElementById('results-content');
+        resultsEl.style.display = 'block';
+        contentEl.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Importing customers...</p>';
+
+        let imported = 0;
+        let failed = [];
+
+        try {
+            const batch = db.batch();
+            const customerRef = db.collection('customers').doc(user.uid).collection('customerList');
+
+            for (const row of this.csvData) {
+                try {
+                    const customerData = {
+                        companyId: this.cleanValue(row['Company ID']),
+                        companyName: this.cleanValue(row['Company Name']),
+                        address: this.cleanValue(row['Address']),
+                        contactPerson: this.cleanValue(row['Contact Person']),
+                        contactNumber: '', // Will be filled manually
+                        email: this.cleanValue(row['Email']),
+                        branchDepartment: this.cleanValue(row['Branch/Department']),
+                        machines: this.cleanValue(row['Machines']),
+                        status: 'active',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    if (!customerData.companyName) {
+                        failed.push({ row: row['Company Name'] || 'Unknown', reason: 'Missing company name' });
+                        continue;
+                    }
+
+                    const newDocRef = customerRef.doc();
+                    batch.set(newDocRef, customerData);
+                    imported++;
+                } catch (error) {
+                    failed.push({ row: row['Company Name'] || 'Unknown', reason: error.message });
+                }
+            }
+
+            await batch.commit();
+            
+            this.showImportResults(imported, failed);
+            this.loadCustomers();
+        } catch (error) {
+            console.error('Import error:', error);
+            contentEl.innerHTML = `<p class="error">Import failed: ${error.message}</p>`;
+        }
+    },
+
+    // Show import results
+    showImportResults(imported, failed) {
+        const contentEl = document.getElementById('results-content');
+        
+        let html = '<div class="import-summary">';
+        html += '<div class="summary-stat">';
+        html += `<div class="number">${imported}</div>`;
+        html += '<div class="label">Imported</div>';
+        html += '</div>';
+        html += '<div class="summary-stat">';
+        html += `<div class="number" style="color: #e53e3e;">${failed.length}</div>`;
+        html += '<div class="label">Failed</div>';
+        html += '</div>';
+        html += '<div class="summary-stat">';
+        html += `<div class="number">${imported + failed.length}</div>`;
+        html += '<div class="label">Total</div>';
+        html += '</div>';
+        html += '</div>';
+
+        if (failed.length > 0) {
+            html += '<h4 style="color: #742a2a; margin-top: 20px;">Failed Imports:</h4>';
+            html += '<div class="error-list">';
+            failed.forEach(item => {
+                html += `<div class="error-item">`;
+                html += `<strong>${this.escapeHtml(item.row)}</strong>: ${this.escapeHtml(item.reason)}`;
+                html += `</div>`;
+            });
+            html += '</div>';
+        }
+
+        html += `<p style="margin-top: 15px;"><i class="fas fa-info-circle"></i> Note: Contact numbers are left blank for manual entry.</p>`;
+        
+        contentEl.innerHTML = html;
+        this.showNotification(`Successfully imported ${imported} customers`, 'success');
+    },
+
+    // Export customers to CSV
+    exportCustomers() {
+        if (this.customers.length === 0) {
+            this.showNotification('No customers to export', 'error');
+            return;
+        }
+
+        const headers = ['Company ID', 'Company Name', 'Address', 'Contact Person', 'Contact Number', 'Email', 'Branch/Department', 'Machines', 'Status'];
+        let csv = headers.join(',') + '\n';
+
+        this.customers.forEach(customer => {
+            const row = [
+                customer.companyId || '',
+                `"${(customer.companyName || '').replace(/"/g, '""')}"`,
+                `"${(customer.address || '').replace(/"/g, '""')}"`,
+                customer.contactPerson || '',
+                customer.contactNumber || '',
+                customer.email || '',
+                customer.branchDepartment || '',
+                `"${(customer.machines || '').replace(/"/g, '""')}"`,
+                customer.status || 'active'
+            ];
+            csv += row.join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.showNotification('Customers exported successfully', 'success');
+    },
+
+    // Escape HTML to prevent XSS
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    // Show notification
+    showNotification(message, type = 'info') {
+        if (window.expenseTracker && window.expenseTracker.showNotification) {
+            window.expenseTracker.showNotification(message, type);
+        } else {
+            alert(message);
+        }
+    }
+};
+
+// Make customerManager globally available
+window.customerManager = customerManager;
+
+
+// ============================================
+// BILLING MANAGEMENT SYSTEM (Basic Structure)
+// ============================================
+
+const billingManager = {
+    bills: [],
+
+    init() {
+        console.log('🔧 Initializing Billing Manager...');
+        this.loadBills();
+    },
+
+    async loadBills() {
+        // Placeholder for billing functionality
+        console.log('Billing system ready');
+    },
+
+    showAddBillModal() {
+        alert('Billing feature coming soon! This will allow you to:\n- Create bills linked to customers\n- Track payment status\n- Generate invoices');
+    }
+};
+
+// Initialize customer manager when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for auth to be ready
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            setTimeout(() => {
+                customerManager.init();
+                billingManager.init();
+            }, 1000);
+        }
+    });
+});
+
+console.log('✅ Customer and Billing Management modules loaded');

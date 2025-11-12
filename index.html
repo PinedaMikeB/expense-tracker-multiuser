@@ -75,6 +75,12 @@
             <button class="tab-button" onclick="showTab('team')">
                 <i class="fas fa-users"></i> Team
             </button>
+            <button class="tab-button" onclick="showTab('customers')">
+                <i class="fas fa-address-book"></i> Customers
+            </button>
+            <button class="tab-button" onclick="showTab('billing')">
+                <i class="fas fa-file-invoice-dollar"></i> Billing
+            </button>
             <button class="tab-button" id="permissions-tab-button" onclick="showTab('permissions')" style="display: none;">
                 <i class="fas fa-shield-alt"></i> Permissions
             </button>
@@ -650,6 +656,227 @@
                 </div>
             </div>
         </div>
+
+        <!-- Customers Tab -->
+        <div id="customers-tab" class="tab-content" style="display: none;">
+            <div class="customers-section">
+                <!-- Header with Actions -->
+                <div class="customers-header">
+                    <h2><i class="fas fa-address-book"></i> Customer Management</h2>
+                    <div class="customers-actions">
+                        <button class="btn btn-primary" onclick="customerManager.showAddCustomerModal()">
+                            <i class="fas fa-plus"></i> Add Customer
+                        </button>
+                        <button class="btn btn-success" onclick="customerManager.showImportModal()">
+                            <i class="fas fa-file-upload"></i> Import CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="customerManager.exportCustomers()">
+                            <i class="fas fa-file-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filter -->
+                <div class="customers-filters">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="customer-search" placeholder="Search customers..." 
+                               oninput="customerManager.searchCustomers(this.value)">
+                    </div>
+                    <select id="customer-status-filter" onchange="customerManager.filterCustomers()">
+                        <option value="all">All Customers</option>
+                        <option value="active">Active Only</option>
+                        <option value="inactive">Inactive Only</option>
+                    </select>
+                    <div class="customer-count">
+                        <span id="customer-count">0</span> customers
+                    </div>
+                </div>
+
+                <!-- Customers Table -->
+                <div class="table-section">
+                    <div class="table-container">
+                        <table id="customers-table">
+                            <thead>
+                                <tr>
+                                    <th>Company ID</th>
+                                    <th>Company Name</th>
+                                    <th>Branch/Department</th>
+                                    <th>Contact Person</th>
+                                    <th>Email</th>
+                                    <th>Machines</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customers-tbody">
+                                <tr class="empty-state">
+                                    <td colspan="8">
+                                        <i class="fas fa-inbox"></i>
+                                        <p>No customers yet. Add one or import from CSV.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Add/Edit Customer Modal -->
+        <div id="customer-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="customerManager.closeModal()">&times;</span>
+                <h2 id="customer-modal-title">Add New Customer</h2>
+                <form id="customer-form" onsubmit="customerManager.saveCustomer(event)">
+                    <input type="hidden" id="customer-id">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-company-id">Company ID</label>
+                            <input type="text" id="customer-company-id" placeholder="e.g., 1001">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-company-name">Company Name *</label>
+                            <input type="text" id="customer-company-name" required placeholder="e.g., ABC Corporation">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-address">Address</label>
+                        <textarea id="customer-address" rows="2" placeholder="Complete address"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-contact-person">Contact Person</label>
+                            <input type="text" id="customer-contact-person" placeholder="Full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-contact-number">Contact Number</label>
+                            <input type="text" id="customer-contact-number" placeholder="e.g., 0912-345-6789">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-email">Email</label>
+                            <input type="email" id="customer-email" placeholder="email@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-branch">Branch/Department</label>
+                            <input type="text" id="customer-branch" placeholder="e.g., Main Office">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-machines">Machines</label>
+                        <textarea id="customer-machines" rows="2" placeholder="e.g., Canon iR2520, Xerox WC5855"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-status">Status</label>
+                        <select id="customer-status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Customer
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="customerManager.closeModal()">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Import CSV Modal -->
+        <div id="import-csv-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="customerManager.closeImportModal()">&times;</span>
+                <h2>Import Customers from CSV</h2>
+                
+                <div class="import-instructions">
+                    <h3><i class="fas fa-info-circle"></i> CSV Format Instructions</h3>
+                    <p>Your CSV should have these columns:</p>
+                    <ul>
+                        <li><strong>Company ID</strong> - Customer company identifier</li>
+                        <li><strong>Company Name</strong> - Customer company name (Required)</li>
+                        <li><strong>Address</strong> - Complete address</li>
+                        <li><strong>Contact Person</strong> - Contact person name</li>
+                        <li><strong>Email</strong> - Email address</li>
+                        <li><strong>Branch/Department</strong> - Branch or department name</li>
+                        <li><strong>Machines</strong> - List of machines</li>
+                    </ul>
+                    <p><strong>Note:</strong> NULL values, empty cells, and "null" text will be converted to empty strings.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="csv-file-input">
+                        <i class="fas fa-file-csv"></i> Select CSV File
+                    </label>
+                    <input type="file" id="csv-file-input" accept=".csv" onchange="customerManager.handleFileSelect(event)">
+                </div>
+
+                <div id="csv-preview" class="csv-preview" style="display: none;">
+                    <h3>Preview (First 5 rows)</h3>
+                    <div id="csv-preview-content"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="import-csv-btn" class="btn btn-primary" onclick="customerManager.importCSV()" disabled>
+                        <i class="fas fa-upload"></i> Import Customers
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="customerManager.closeImportModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Tab -->
+        <div id="billing-tab" class="tab-content" style="display: none;">
+            <div class="billing-section">
+                <h2><i class="fas fa-file-invoice-dollar"></i> Billing Management</h2>
+                <div class="billing-actions">
+                    <button class="btn btn-primary" onclick="billingManager.showAddBillModal()">
+                        <i class="fas fa-plus"></i> Create Bill
+                    </button>
+                </div>
+                
+                <!-- Bills Table -->
+                <div class="table-section">
+                    <div class="table-container">
+                        <table id="billing-table">
+                            <thead>
+                                <tr>
+                                    <th>Bill #</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billing-tbody">
+                                <tr class="empty-state">
+                                    <td colspan="6">
+                                        <i class="fas fa-inbox"></i>
+                                        <p>No bills yet. Create your first bill.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Notification Container -->
@@ -660,6 +887,126 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    
+    <!-- Customer Add/Edit Modal -->
+    <div id="customer-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="customer-modal-title">Add Customer</h2>
+                <span class="close-modal" onclick="customerManager.closeCustomerModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="customer-form">
+                    <input type="hidden" id="customer-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-company-id">Company ID</label>
+                            <input type="text" id="customer-company-id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-company-name">Company Name *</label>
+                            <input type="text" id="customer-company-name" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-address">Address</label>
+                        <textarea id="customer-address" rows="2"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-contact-person">Contact Person</label>
+                            <input type="text" id="customer-contact-person">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-contact-number">Contact Number</label>
+                            <input type="tel" id="customer-contact-number">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customer-email">Email</label>
+                            <input type="email" id="customer-email">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer-branch">Branch/Department</label>
+                            <input type="text" id="customer-branch">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-machines">Machines</label>
+                        <textarea id="customer-machines" rows="2" 
+                                  placeholder="e.g., Canon iR2520, Xerox WC5855"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-status">Status</label>
+                        <select id="customer-status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <button type="button" class="btn btn-secondary" onclick="customerManager.closeCustomerModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Import Customers from CSV</h2>
+                <span class="close-modal" onclick="customerManager.closeImportModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="import-instructions">
+                    <h3><i class="fas fa-info-circle"></i> CSV Format Requirements</h3>
+                    <p>Your CSV file should have these columns:</p>
+                    <ul>
+                        <li><strong>Company ID</strong> - Unique identifier</li>
+                        <li><strong>Company Name</strong> - Required</li>
+                        <li><strong>Address</strong> - Full address</li>
+                        <li><strong>Contact Person</strong> - Name</li>
+                        <li><strong>Email</strong> - Contact email</li>
+                        <li><strong>Branch/Department</strong> - Location/dept</li>
+                        <li><strong>Machines</strong> - Equipment list</li>
+                    </ul>
+                    <p class="note">
+                        <i class="fas fa-check-circle"></i> 
+                        NULL values and empty fields will be handled automatically
+                    </p>
+                </div>
+                
+                <div class="file-upload-area">
+                    <input type="file" id="csv-file-input" accept=".csv" 
+                           onchange="customerManager.handleFileSelect(event)" style="display: none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('csv-file-input').click()">
+                        <i class="fas fa-file-csv"></i> Select CSV File
+                    </button>
+                    <div id="file-name-display" class="file-name"></div>
+                </div>
+
+                <div id="import-preview" class="import-preview" style="display: none;">
+                    <h3>Preview (First 5 rows)</h3>
+                    <div id="preview-content"></div>
+                    <button class="btn btn-success" onclick="customerManager.executeImport()">
+                        <i class="fas fa-upload"></i> Import Customers
+                    </button>
+                </div>
+
+                <div id="import-results" class="import-results" style="display: none;">
+                    <h3>Import Results</h3>
+                    <div id="results-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Payment Modal -->
     <div id="payment-modal" class="modal">
@@ -718,6 +1065,8 @@
     </script>
     
     <script src="script.js"></script>
+    <script src="import-customers.js"></script>
+    <script src="customer-billing-integration.js"></script>
     <script>
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {

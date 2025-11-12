@@ -2400,3 +2400,346 @@ tbody tr:last-child td {
     transform: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+/* ============================================
+   CUSTOMER MANAGEMENT STYLES
+   ============================================ */
+
+.customers-section {
+    padding: 20px;
+}
+
+.customers-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.customers-header h2 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1.75rem;
+}
+
+.customers-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.customers-filters {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 10px 10px 40px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+#customer-status-filter {
+    padding: 10px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+}
+
+.customer-count {
+    padding: 10px 20px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.customer-count span {
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+/* Customer Table Specific Styles */
+#customers-table th {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+#customers-table tbody tr:hover {
+    background: #f7fafc;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.active {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.status-badge.inactive {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+/* Customer Modal Styles */
+#customer-modal .modal-content {
+    max-width: 700px;
+}
+
+#customer-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Import Modal Styles */
+#import-modal .modal-content {
+    max-width: 800px;
+}
+
+.import-instructions {
+    background: #ebf8ff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #4299e1;
+}
+
+.import-instructions h3 {
+    color: #2c5282;
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.import-instructions ul {
+    margin: 12px 0;
+    padding-left: 20px;
+}
+
+.import-instructions li {
+    margin: 6px 0;
+    color: #2d3748;
+}
+
+.import-instructions .note {
+    margin-top: 15px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    color: #22543d;
+}
+
+.file-upload-area {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    margin: 20px 0;
+    background: #f7fafc;
+}
+
+.file-upload-area:hover {
+    border-color: #667eea;
+    background: #edf2f7;
+}
+
+.file-name {
+    margin-top: 15px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.import-preview {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.import-preview h3 {
+    margin-top: 0;
+    color: #2d3748;
+}
+
+#preview-content {
+    max-height: 300px;
+    overflow: auto;
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.import-results {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-radius: 8px;
+}
+
+.import-results.error {
+    background: #fff5f5;
+    border-color: #fc8181;
+}
+
+.import-results h3 {
+    margin-top: 0;
+    color: #22543d;
+}
+
+.import-results.error h3 {
+    color: #742a2a;
+}
+
+#results-content {
+    margin-top: 15px;
+}
+
+.import-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.summary-stat {
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.summary-stat .number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.summary-stat .label {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-top: 5px;
+}
+
+.error-list {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.error-item {
+    padding: 8px;
+    border-left: 3px solid #fc8181;
+    margin-bottom: 8px;
+    background: #fff5f5;
+}
+
+/* ============================================
+   BILLING MANAGEMENT STYLES
+   ============================================ */
+
+.billing-section {
+    padding: 20px;
+}
+
+.billing-section h2 {
+    color: #2d3748;
+    margin-bottom: 20px;
+}
+
+.billing-actions {
+    margin-bottom: 20px;
+}
+
+#billing-table th {
+    background: #48bb78;
+    color: white;
+}
+
+/* Empty State Styles */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px !important;
+    color: #a0aec0;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Responsive Design for Customer Management */
+@media (max-width: 768px) {
+    .customers-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .customers-actions {
+        flex-direction: column;
+    }
+    
+    .customers-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        max-width: 100%;
+    }
+    
+    #customers-table,
+    #billing-table {
+        font-size: 0.85rem;
+    }
+    
+    #customers-table th,
+    #customers-table td {
+        padding: 8px 5px;
+    }
+}

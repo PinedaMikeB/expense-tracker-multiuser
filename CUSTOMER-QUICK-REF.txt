@@ -1,0 +1,184 @@
+╔══════════════════════════════════════════════════════════════╗
+║            CUSTOMER MANAGEMENT QUICK REFERENCE               ║
+╚══════════════════════════════════════════════════════════════╝
+
+📊 YOUR DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+File: Marga_Customers.csv
+Records: 2,920 customer entries
+Missing: Contact Numbers (all NULL)
+
+User Accounts:
+  ✉ michael.marga@gmail.com → Personal Files
+  ✉ pinedamikeb@yahoo.com → Marga Enterprises (Copier Rental)
+
+🚀 QUICK IMPORT (UI Method)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Open app → Login (pinedamikeb@yahoo.com)
+2. Click "Customers" tab
+3. Click "Import CSV"
+4. Select Marga_Customers.csv
+5. Review preview
+6. Click "Import" → Wait ~30 seconds
+7. Done! ✅
+
+🖥️  CONSOLE IMPORT (Alternative)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Login to app
+2. Press F12 (open console)
+3. Paste this code:
+
+const input = document.createElement('input');
+input.type = 'file';
+input.accept = '.csv';
+input.onchange = async (e) => {
+    const file = e.target.files[0];
+    const csvText = await customerImporter.loadFromFile(file);
+    await customerImporter.importFromCSV(csvText);
+};
+input.click();
+
+4. Select CSV file
+5. Wait for completion (console shows progress)
+
+🧪 TEST IMPORT FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Open: customer-import-test.html
+1. Open test page in browser
+2. Login status checks automatically
+3. Select CSV file
+4. Click "Dry Run" to test (no data imported)
+5. If OK, click "Start Import"
+
+📋 KEY FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Add/Edit/Delete customers
+✅ Search across all fields (real-time)
+✅ Filter by status (Active/Inactive)
+✅ Import CSV (handles NULL values)
+✅ Export CSV (download anytime)
+✅ Link customers to bills
+✅ View customer billing history
+✅ Multi-tenant (isolated per user)
+
+🔍 SEARCH & FILTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Search by:
+  • Company Name
+  • Company ID
+  • Contact Person
+  • Email
+  • Branch/Department
+
+Filter:
+  • All Customers
+  • Active Only
+  • Inactive Only
+
+📤 EXPORT DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Go to Customers tab
+2. Click "Export CSV"
+3. File downloads as: customers_YYYY-MM-DD.csv
+4. Open in Excel/Google Sheets
+
+📝 MANUAL DATA ENTRY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After import, contact numbers are blank:
+1. Click edit icon on customer row
+2. Enter contact number
+3. Click "Save Customer"
+
+OR bulk update:
+1. Export to CSV
+2. Add contact numbers in Excel
+3. Re-import (creates duplicates)
+
+🔗 LINK TO BILLING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When creating a bill:
+1. Select customer from dropdown
+2. Bill To auto-fills with customer info
+3. Bill is linked to customer
+4. View customer billing history in customer details
+
+🔐 FIREBASE SETUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Go to Firebase Console
+2. Firestore Database → Rules
+3. Copy rules from: firebase-customer-rules.txt
+4. Click "Publish"
+
+⚡ PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Import Speed:
+  • ~450 records per batch
+  • 2,920 records ≈ 30-60 seconds
+  • Batched for Firestore limits
+
+Search:
+  • Real-time client-side search
+  • Instant results
+  • No database queries
+
+🚨 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Problem: Import fails
+  ➤ Check if logged in
+  ➤ Update Firebase rules
+  ➤ Check console (F12) for errors
+
+Problem: "No user logged in"
+  ➤ Login first before importing
+
+Problem: Customers not showing
+  ➤ Check correct account logged in
+  ➤ Clear cache and reload
+
+Problem: Search not working
+  ➤ Check console for errors
+  ➤ Verify script.js loaded
+
+📁 FILES CREATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ import-customers.js                CSV import utility
+✅ customer-billing-integration.js    Links customers to billing
+✅ firebase-customer-rules.txt        Security rules
+✅ CUSTOMER-MANAGEMENT-GUIDE.md       Full documentation
+✅ customer-import-test.html          Test import page
+✅ CUSTOMER-QUICK-REF.txt             This file
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Full Guide: CUSTOMER-MANAGEMENT-GUIDE.md
+Quick Ref: CUSTOMER-QUICK-REF.txt (this file)
+
+🎯 NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+☐ 1. Test import with customer-import-test.html
+☐ 2. Import your Marga_Customers.csv
+☐ 3. Update Firebase security rules
+☐ 4. Test search and filter
+☐ 5. Fill in contact numbers manually
+☐ 6. Link customers to billing
+☐ 7. Create first bill with customer
+
+💡 PRO TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Export CSV regularly for backup
+• Use Company ID for quick search
+• Mark inactive instead of delete
+• Test with small file first
+• Each user account is isolated
+
+═══════════════════════════════════════════════════════════════
+
+🆘 NEED HELP?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Check console (F12) for errors
+2. Review CUSTOMER-MANAGEMENT-GUIDE.md
+3. Use test page for debugging
+4. Check Firebase logs
+
+Last Updated: November 12, 2025
+Version: 1.0.0

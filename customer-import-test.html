@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer CSV Import Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            background: #e3f2fd;
+            border: 2px solid #2196F3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.error {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .progress.show {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .log {
+            background: #263238;
+            color: #4caf50;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .log.show {
+            display: block;
+        }
+
+        .log div {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+
+        .log .error-log {
+            color: #ff5252;
+        }
+
+        .log .success-log {
+            color: #4caf50;
+        }
+
+        .log .info-log {
+            color: #64b5f6;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .warning strong {
+            color: #f57c00;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Customer CSV Import Test</h1>
+            <p>Test your Marga_Customers.csv import before production</p>
+        </div>
+
+        <div class="content">
+            <div class="warning">
+                <strong>⚠️ Important:</strong> Make sure you're logged in to the main expense tracker app first!
+                This test page requires an active Firebase session.
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">1</span>
+                    Login Status
+                </h3>
+                <p id="login-status">Checking authentication...</p>
+                <button id="login-btn" class="btn" style="display: none;" onclick="window.open('../index.html', '_blank')">
+                    Open Main App to Login
+                </button>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">2</span>
+                    Select CSV File
+                </h3>
+                <p>Choose your <code>Marga_Customers.csv</code> file to test import.</p>
+                <input type="file" id="csv-file" accept=".csv" style="display: none;">
+                <button class="btn" onclick="document.getElementById('csv-file').click()">
+                    📁 Select CSV File
+                </button>
+                <div id="file-info"></div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">3</span>
+                    Import Data
+                </h3>
+                <p>This will import all customers into Firebase for the logged-in user.</p>
+                <button id="import-btn" class="btn" disabled onclick="startImport()">
+                    🚀 Start Import
+                </button>
+                <button id="dry-run-btn" class="btn" disabled onclick="dryRun()">
+                    🔍 Dry Run (Test Only)
+                </button>
+            </div>
+
+            <div class="progress" id="progress">
+                <div class="progress-bar" id="progress-bar">0%</div>
+            </div>
+
+            <div class="status" id="status"></div>
+
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB07Yw7wKQk4W2tqznic-IZb9NXgko0VE4",
+            authDomain: "expense-tracker-app-3268a.firebaseapp.com",
+            projectId: "expense-tracker-app-3268a",
+            storageBucket: "expense-tracker-app-3268a.firebasestorage.app",
+            messagingSenderId: "884846260963",
+            appId: "1:884846260963:web:4f3a7ab2076cbc593b8bd6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let csvData = null;
+        let csvText = null;
+
+        // Check authentication
+        auth.onAuthStateChanged((user) => {
+            const loginStatus = document.getElementById('login-status');
+            const loginBtn = document.getElementById('login-btn');
+            
+            if (user) {
+                loginStatus.innerHTML = `✅ <strong>Logged in as:</strong> ${user.email}`;
+                loginBtn.style.display = 'none';
+            } else {
+                loginStatus.innerHTML = '❌ <strong>Not logged in.</strong> Please login to the main app first.';
+                loginBtn.style.display = 'inline-block';
+            }
+        });
+
+        // File selection
+        document.getElementById('csv-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const fileInfo = document.getElementById('file-info');
+            fileInfo.innerHTML = `
+                <p style="margin-top: 10px;">
+                    <strong>Selected:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB
+                </p>
+            `;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                csvText = e.target.result;
+                csvData = parseCSV(csvText);
+                log(`✅ Parsed ${csvData.length} records from CSV`, 'success');
+                
+                document.getElementById('import-btn').disabled = false;
+                document.getElementById('dry-run-btn').disabled = false;
+            };
+            reader.readAsText(file);
+        });
+
+        // Parse CSV
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n').filter(line => line.trim());
+            const headers = parseCSVLine(lines[0]);
+            
+            const customers = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header.trim()] = cleanValue(values[index]);
+                });
+                
+                const customer = {
+                    companyId: row['Company ID'] || '',
+                    companyName: row['Company Name'] || '',
+                    address: row['Address'] || '',
+                    contactPerson: row['Contact Person'] || '',
+                    contactNumber: '',
+                    email: row['Email'] || '',
+                    branchDepartment: row['Branch/Department'] || '',
+                    machines: row['Machines'] || '',
+                    status: 'active'
+                };
+                
+                if (customer.companyName) {
+                    customers.push(customer);
+                }
+            }
+            
+            return customers;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result.map(val => val.replace(/^"|"$/g, '').trim());
+        }
+
+        function cleanValue(value) {
+            if (!value || value === 'null' || value === 'NULL' || value === 'undefined') {
+                return '';
+            }
+            return value.trim();
+        }
+
+        // Dry run (test only)
+        async function dryRun() {
+            const user = auth.currentUser;
+            if (!user) {
+                showStatus('Please log in first', 'error');
+                return;
+            }
+
+            clearLog();
+            log(`🔍 Starting DRY RUN for user: ${user.email}`, 'info');
+            log(`📊 Total records to process: ${csvData.length}`, 'info');
+            
+            let valid = 0;
+            let invalid = 0;
+            
+            csvData.forEach((customer, idx) => {
+                if (customer.companyName && customer.companyName !== '') {
+                    valid++;
+                } else {
+                    invalid++;
+                    log(`❌ Row ${idx + 1}: Missing company name`, 'error');
+                }
+            });
+            
+            log(`✅ Valid records: ${valid}`, 'success');
+            log(`❌ Invalid records: ${invalid}`, 'error');
+            log(`\n🎯 DRY RUN COMPLETE - No data was imported`, 'success');
+            
+            showStatus(`Dry run complete! ${valid} valid, ${invalid} invalid records.`, 'success');
+        }
+
+        // Start import
+        async function startImport() {
+            const user = auth.currentUser;
+            if (!user) {
+                showStatus('Please log in first', 'error');
+                return;
+            }
+
+            if (!confirm(`Import ${csvData.length} customers for ${user.email}?`)) {
+                return;
+            }
+
+            clearLog();
+            showProgress();
+            document.getElementById('import-btn').disabled = true;
+            document.getElementById('dry-run-btn').disabled = true;
+
+            log(`🚀 Starting import for user: ${user.email}`, 'info');
+            log(`📊 Total records: ${csvData.length}`, 'info');
+
+            const batchSize = 450;
+            let totalImported = 0;
+            let totalFailed = 0;
+
+            try {
+                for (let i = 0; i < csvData.length; i += batchSize) {
+                    const batch = csvData.slice(i, i + batchSize);
+                    const batchNum = Math.floor(i / batchSize) + 1;
+                    const totalBatches = Math.ceil(csvData.length / batchSize);
+                    
+                    log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} records)...`, 'info');
+                    
+                    const result = await importBatch(batch, user.uid);
+                    totalImported += result.imported;
+                    totalFailed += result.failed;
+                    
+                    const progress = ((i + batch.length) / csvData.length * 100).toFixed(1);
+                    updateProgress(progress);
+                    
+                    log(`   ✅ Imported: ${result.imported}, ❌ Failed: ${result.failed}`, 
+                        result.failed > 0 ? 'error' : 'success');
+                }
+
+                log(`\n${'='.repeat(50)}`, 'info');
+                log(`✅ IMPORT COMPLETE!`, 'success');
+                log(`📊 Successfully imported: ${totalImported} customers`, 'success');
+                log(`❌ Failed: ${totalFailed} customers`, totalFailed > 0 ? 'error' : 'success');
+                log(`${'='.repeat(50)}`, 'info');
+
+                showStatus(`Import complete! ${totalImported} imported, ${totalFailed} failed.`, 'success');
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                showStatus('Import failed: ' + error.message, 'error');
+            } finally {
+                document.getElementById('import-btn').disabled = false;
+                document.getElementById('dry-run-btn').disabled = false;
+                hideProgress();
+            }
+        }
+
+        async function importBatch(customers, userId) {
+            const batch = db.batch();
+            const customerRef = db.collection('customers').doc(userId).collection('customerList');
+            
+            let imported = 0;
+            let failed = 0;
+
+            for (const customerData of customers) {
+                try {
+                    customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    customerData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    
+                    const newDocRef = customerRef.doc();
+                    batch.set(newDocRef, customerData);
+                    imported++;
+                } catch (error) {
+                    failed++;
+                }
+            }
+
+            await batch.commit();
+            return { imported, failed };
+        }
+
+        // UI Helpers
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            logEl.classList.add('show');
+            const div = document.createElement('div');
+            div.className = `${type}-log`;
+            div.textContent = message;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status show ${type}`;
+        }
+
+        function showProgress() {
+            document.getElementById('progress').classList.add('show');
+        }
+
+        function hideProgress() {
+            document.getElementById('progress').classList.remove('show');
+        }
+
+        function updateProgress(percent) {
+            const bar = document.getElementById('progress-bar');
+            bar.style.width = percent + '%';
+            bar.textContent = percent + '%';
+        }
+    </script>
+</body>
+</html>

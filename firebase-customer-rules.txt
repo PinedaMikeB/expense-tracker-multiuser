@@ -1,0 +1,75 @@
+// ============================================
+// FIREBASE SECURITY RULES FOR CUSTOMERS
+// ============================================
+// Add these rules to your Firebase Console
+// Database > Firestore Database > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // CUSTOMER COLLECTION RULES
+    // ========================================
+    match /customers/{userId}/customerList/{customerId} {
+      // Users can only access their own customer data
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Validate customer data structure
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['companyName', 'createdAt', 'updatedAt'])
+        && request.resource.data.companyName is string
+        && request.resource.data.status in ['active', 'inactive'];
+      
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.companyName is string
+        && request.resource.data.status in ['active', 'inactive'];
+      
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Customer document (parent)
+    match /customers/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ========================================
+    // EXISTING RULES (Keep these)
+    // ========================================
+    
+    // Expenses
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Team and permissions
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Billing (if exists)
+    match /billing/{userId}/bills/{billId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+
+// ============================================
+// FIRESTORE INDEXES (If needed)
+// ============================================
+// If you experience slow queries, create these indexes:
+//
+// Collection: customers/{userId}/customerList
+// Fields indexed:
+// - companyName (Ascending) + status (Ascending)
+// - createdAt (Descending)
+// - updatedAt (Descending)
+//
+// You can create these in Firebase Console:
+// Database > Firestore Database > Indexes
