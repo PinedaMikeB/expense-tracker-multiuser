@@ -251,10 +251,23 @@ class ExpenseTracker {
         const amount = parseFloat(document.getElementById('income-amount').value);
         const type = document.getElementById('income-type').value;
         const date = document.getElementById('income-date').value;
+        const customerId = document.getElementById('income-customer')?.value || null;
         const form = document.getElementById('income-form');
         const editingId = form.dataset.editingId;
 
-        console.log('Income form values:', { description, amount, type, date, editingId });
+        // Get customer details if selected
+        let customerName = null;
+        if (customerId && window.customerManager && window.customerManager.customers) {
+            const customer = window.customerManager.customers.find(c => c.id === customerId);
+            if (customer) {
+                customerName = customer.companyName || customer.name;
+                if (customer.branchDepartment) {
+                    customerName += ` - ${customer.branchDepartment}`;
+                }
+            }
+        }
+
+        console.log('Income form values:', { description, amount, type, date, customerId, customerName, editingId });
 
         if (!description || !amount || !type || !date) {
             console.log('Validation failed - missing fields');
@@ -271,7 +284,9 @@ class ExpenseTracker {
                     description,
                     amount,
                     type,
-                    date
+                    date,
+                    customerId,
+                    customerName
                 };
                 console.log('Updating income:', this.income[incomeIndex]);
                 this.showNotification('Income updated successfully!', 'success');
@@ -290,6 +305,8 @@ class ExpenseTracker {
                 amount,
                 type,
                 date,
+                customerId,
+                customerName,
                 timestamp: new Date().toISOString()
             };
 
@@ -686,23 +703,25 @@ class ExpenseTracker {
         tbody.innerHTML = '';
 
         if (this.income.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No income recorded yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666;">No income recorded yet</td></tr>';
             return;
         }
 
         this.income.forEach(income => {
             const row = document.createElement('tr');
+            const customerDisplay = income.customerName || '-';
             row.innerHTML = `
                 <td>${this.formatDate(income.date)}</td>
                 <td>${income.description}</td>
+                <td>${customerDisplay}</td>
                 <td><span class="income-type-badge income-${income.type}">${income.type}</span></td>
                 <td>${this.formatCurrency(income.amount)}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-sm" onclick="expenseTracker.editIncome(${income.id})">
+                        <button class="btn btn-primary btn-sm" onclick="expenseTracker.editIncome('${income.id}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="expenseTracker.deleteIncome(${income.id})">
+                        <button class="btn btn-danger btn-sm" onclick="expenseTracker.deleteIncome('${income.id}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1756,6 +1775,12 @@ class ExpenseTracker {
         document.getElementById('income-amount').value = income.amount;
         document.getElementById('income-type').value = income.type;
         document.getElementById('income-date').value = income.date;
+        
+        // Set customer dropdown value if available
+        const customerSelect = document.getElementById('income-customer');
+        if (customerSelect) {
+            customerSelect.value = income.customerId || '';
+        }
 
         // Change the form to edit mode
         const form = document.getElementById('income-form');
@@ -2444,6 +2469,12 @@ function showTab(tabName) {
     // Refresh analytics when analytics tab is shown
     if (tabName === 'analytics' && window.expenseTracker) {
         window.expenseTracker.renderAnalytics();
+    }
+    
+    // Populate income customer dropdown when income tab is shown
+    if (tabName === 'income' && window.customerManager) {
+        console.log('💰 Income tab activated - populating customer dropdown');
+        customerManager.populateIncomeCustomerDropdown();
     }
     
     // Load customers when customers tab is shown
@@ -3675,11 +3706,37 @@ const customerManager = {
             this.filteredCustomers = [...this.customers];
             this.displayCustomers();
             this.updateCustomerCount();
+            this.populateIncomeCustomerDropdown();  // Populate income dropdown
             console.log(`✅ Loaded ${this.customers.length} customers`);
         } catch (error) {
             console.error('Error loading customers:', error);
             this.showNotification('Error loading customers', 'error');
         }
+    },
+
+    // Populate income customer dropdown
+    populateIncomeCustomerDropdown() {
+        const customerSelect = document.getElementById('income-customer');
+        if (!customerSelect) return;
+        
+        customerSelect.innerHTML = '<option value="">Select Customer (Optional)</option>';
+        
+        if (!this.customers || this.customers.length === 0) {
+            return;
+        }
+        
+        this.customers.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            let displayName = customer.companyName || 'Unknown Customer';
+            if (customer.branchDepartment) {
+                displayName += ` - ${customer.branchDepartment}`;
+            }
+            option.textContent = displayName;
+            customerSelect.appendChild(option);
+        });
+        
+        console.log(`📋 Income customer dropdown populated with ${this.customers.length} customers`);
     },
 
     // Display customers in table
