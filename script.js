@@ -489,8 +489,8 @@ class ExpenseTracker {
                 // Create the user document with initial data
                 await userDocRef.set({
                     email: this.currentUser.email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: window.firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 // Initialize default categories in settings subcollection
@@ -503,7 +503,7 @@ class ExpenseTracker {
             } else {
                 // Update last login time
                 await userDocRef.update({
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    lastLogin: window.firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
         } catch (error) {
