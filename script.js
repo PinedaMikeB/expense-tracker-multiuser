@@ -475,6 +475,42 @@ class ExpenseTracker {
         })}`;
     }
 
+    // Ensure user document exists in Firestore (creates if missing)
+    async ensureUserDocumentExists() {
+        if (!this.currentUser) return;
+        
+        try {
+            const userDocRef = window.db.collection('users').doc(this.currentUser.uid);
+            const userDoc = await userDocRef.get();
+            
+            if (!userDoc.exists) {
+                console.log('📝 Creating new user document for:', this.currentUser.email);
+                
+                // Create the user document with initial data
+                await userDocRef.set({
+                    email: this.currentUser.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Initialize default categories in settings subcollection
+                await userDocRef.collection('settings').doc('categories').set({
+                    categories: this.getDefaultCategories(),
+                    incomeCategories: this.getDefaultIncomeCategories()
+                });
+                
+                console.log('✅ User document created successfully');
+            } else {
+                // Update last login time
+                await userDocRef.update({
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error ensuring user document exists:', error);
+        }
+    }
+
     loadFromLocalStorage() {
         this.expenses = JSON.parse(localStorage.getItem('expenses')) || [];
         this.income = JSON.parse(localStorage.getItem('income')) || [];
@@ -488,6 +524,9 @@ class ExpenseTracker {
         
         try {
             console.log('☁️ Loading data from cloud...');
+            
+            // Check if user document exists, if not create it
+            await this.ensureUserDocumentExists();
             
             // Load expenses
             const expensesSnapshot = await window.db
