@@ -30,8 +30,10 @@ class ExpenseTracker {
         console.log('🔥 Firebase ready');
     }
 
-    handleAuthStateChange(user) {
+    async handleAuthStateChange(user) {
         this.currentUser = user;
+        this.dataOwnerId = null;  // ID of whose data we're accessing
+        this.isTeamMemberAccount = false;
         
         const loginForm = document.getElementById('login-form');
         const userInfo = document.getElementById('user-info');
@@ -48,6 +50,9 @@ class ExpenseTracker {
             
             console.log('👤 User signed in:', user.email);
             
+            // Check if this user is a team member (belongs to another owner)
+            await this.checkTeamMembership();
+            
             // Load data from cloud
             this.loadFromCloud();
         } else {
@@ -62,6 +67,50 @@ class ExpenseTracker {
             // Load from localStorage as fallback
             this.loadFromLocalStorage();
             this.updateUI();
+        }
+    }
+    
+    // Check if current user is a team member of another account
+    async checkTeamMembership() {
+        if (!this.currentUser) return;
+        
+        try {
+            // Check THIS user's document (not owner's) to see if they're a team member
+            const userDoc = await window.db.collection('users').doc(this.currentUser.uid).get();
+            
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                
+                if (userData.isTeamMember && userData.ownerId) {
+                    // This user is a team member - load owner's data
+                    this.isTeamMemberAccount = true;
+                    this.dataOwnerId = userData.ownerId;
+                    this.userRole = userData.role || 'member';
+                    
+                    console.log('👥 Team member detected! Role:', this.userRole, 'Owner:', userData.ownerEmail);
+                    
+                    // Update UI to show team member status
+                    const userEmailEl = document.getElementById('user-email');
+                    if (userEmailEl) {
+                        userEmailEl.textContent = `${this.currentUser.email} (${this.userRole})`;
+                    }
+                    
+                    this.showNotification(`Logged in as ${this.userRole}. Accessing ${userData.ownerEmail}'s data.`, 'info');
+                } else {
+                    // This is an owner account
+                    this.isTeamMemberAccount = false;
+                    this.dataOwnerId = this.currentUser.uid;
+                    this.userRole = 'owner';
+                }
+            } else {
+                // No user document - treat as owner
+                this.dataOwnerId = this.currentUser.uid;
+                this.userRole = 'owner';
+            }
+        } catch (error) {
+            console.error('Error checking team membership:', error);
+            this.dataOwnerId = this.currentUser.uid;
+            this.userRole = 'owner';
         }
     }
 
@@ -83,6 +132,12 @@ class ExpenseTracker {
         this.setDefaultDate();
         
         console.log('ExpenseTracker init() completed');
+    }
+    
+    // Helper: Get the correct user ID for data operations
+    // Team members use owner's ID, owners use their own
+    getDataUserId() {
+        return this.dataOwnerId || this.currentUser?.uid;
     }
 
     getDefaultCategories() {
@@ -480,7 +535,7 @@ class ExpenseTracker {
         if (!this.currentUser) return;
         
         try {
-            const userDocRef = window.db.collection('users').doc(this.currentUser.uid);
+            const userDocRef = window.db.collection('users').doc(this.getDataUserId());
             const userDoc = await userDocRef.get();
             
             if (!userDoc.exists) {
@@ -522,16 +577,21 @@ class ExpenseTracker {
     async loadFromCloud() {
         if (!this.currentUser) return;
         
+        // Use dataOwnerId for team members, or current user for owners
+        const dataUserId = this.dataOwnerId || this.currentUser.uid;
+        
         try {
-            console.log('☁️ Loading data from cloud...');
+            console.log('☁️ Loading data from cloud for:', dataUserId);
             
-            // Check if user document exists, if not create it
-            await this.ensureUserDocumentExists();
+            // Check if user document exists, if not create it (only for owners)
+            if (!this.isTeamMemberAccount) {
+                await this.ensureUserDocumentExists();
+            }
             
             // Load expenses
             const expensesSnapshot = await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(dataUserId)
                 .collection('expenses')
                 .orderBy('timestamp', 'desc')
                 .get();
@@ -544,7 +604,7 @@ class ExpenseTracker {
             // Load income
             const incomeSnapshot = await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(dataUserId)
                 .collection('income')
                 .orderBy('timestamp', 'desc')
                 .get();
@@ -557,7 +617,7 @@ class ExpenseTracker {
             // Load petty cash
             const pettyCashSnapshot = await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(dataUserId)
                 .collection('pettyCash')
                 .orderBy('timestamp', 'desc')
                 .get();
@@ -570,7 +630,7 @@ class ExpenseTracker {
             // Load categories
             const categoriesDoc = await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(dataUserId)
                 .collection('settings')
                 .doc('categories')
                 .get();
@@ -582,7 +642,9 @@ class ExpenseTracker {
             } else {
                 this.categories = this.getDefaultCategories();
                 this.incomeCategories = this.getDefaultIncomeCategories();
-                await this.saveCategoriesToCloud();
+                if (!this.isTeamMemberAccount) {
+                    await this.saveCategoriesToCloud();
+                }
             }
             
             console.log('✅ Data loaded from cloud');
@@ -606,7 +668,7 @@ class ExpenseTracker {
             const batch = window.db.batch();
             const userExpensesRef = window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(this.getDataUserId())
                 .collection('expenses');
             
             // Clear existing expenses and add new ones
@@ -640,7 +702,7 @@ class ExpenseTracker {
             const batch = window.db.batch();
             const userIncomeRef = window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(this.getDataUserId())
                 .collection('income');
             
             // Clear existing income and add new ones
@@ -674,7 +736,7 @@ class ExpenseTracker {
             const batch = window.db.batch();
             const userPettyCashRef = window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(this.getDataUserId())
                 .collection('pettyCash');
             
             // Clear existing petty cash and add new ones
@@ -707,7 +769,7 @@ class ExpenseTracker {
         try {
             await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(this.getDataUserId())
                 .collection('settings')
                 .doc('categories')
                 .set({ 
@@ -2804,7 +2866,7 @@ ExpenseTracker.prototype.saveStoreInfoToCloud = async function(storeInfo) {
     try {
         await window.db
             .collection('users')
-            .doc(this.currentUser.uid)
+            .doc(this.getDataUserId())
             .collection('settings')
             .doc('storeInfo')
             .set(storeInfo);
@@ -2821,7 +2883,7 @@ ExpenseTracker.prototype.loadStoreInfo = async function() {
         try {
             const doc = await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(this.getDataUserId())
                 .collection('settings')
                 .doc('storeInfo')
                 .get();
@@ -2853,56 +2915,119 @@ ExpenseTracker.prototype.updateStoreInfoForm = function(storeInfo) {
     }
 };
 
-// Team Member Invitation System
-ExpenseTracker.prototype.sendTeamInvitation = async function() {
+// Generate random password
+ExpenseTracker.prototype.generatePassword = function(length = 10) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+};
+
+// Add Team Member - Creates account and saves to owner's team
+ExpenseTracker.prototype.addTeamMember = async function() {
     if (!this.currentUser || !this.isOwner()) {
-        this.showNotification('Only owners can send team invitations', 'error');
+        this.showNotification('Only owners can add team members', 'error');
         return;
     }
     
-    const email = document.getElementById('invite-email').value;
+    const email = document.getElementById('invite-email').value.trim().toLowerCase();
     const role = document.getElementById('invite-role').value;
-    const name = document.getElementById('invite-name').value;
+    const name = document.getElementById('invite-name').value.trim();
     
     if (!email || !role || !name) {
-        this.showNotification('Please fill in all invitation fields', 'error');
+        this.showNotification('Please fill in all fields', 'error');
         return;
     }
     
-    // Check if email is already invited or is a member
-    if (this.isEmailAlreadyInvited(email)) {
-        this.showNotification('This email has already been invited', 'error');
+    // Check if email is already a member
+    if (this.teamMembers.some(member => member.email.toLowerCase() === email)) {
+        this.showNotification('This person is already a team member', 'error');
         return;
     }
     
-    const invitation = {
-        id: this.generateId(),
-        email: email,
-        role: role,
-        name: name,
-        invitedBy: this.currentUser.email,
-        invitedAt: new Date(),
-        status: 'pending'
-    };
+    // Generate password
+    const generatedPassword = this.generatePassword(10);
+    const ownerId = this.currentUser.uid;
+    const ownerEmail = this.currentUser.email;
     
-    // Add to pending invitations
-    this.pendingInvitations.push(invitation);
-    
-    // Save to cloud
-    if (this.currentUser) {
-        await this.saveInvitationToCloud(invitation);
+    try {
+        this.showNotification('Creating team member account...', 'info');
+        
+        // Store current owner credentials to re-login after
+        const currentOwnerEmail = this.currentUser.email;
+        
+        // Create the Firebase Auth account for team member
+        const userCredential = await window.auth.createUserWithEmailAndPassword(email, generatedPassword);
+        const newUserId = userCredential.user.uid;
+        
+        console.log('✅ Team member auth account created:', newUserId);
+        
+        // Create team member document with link to owner
+        const teamMemberData = {
+            id: newUserId,
+            email: email,
+            name: name,
+            role: role,
+            ownerId: ownerId,  // Link to owner's data
+            ownerEmail: ownerEmail,
+            createdAt: new Date().toISOString(),
+            isTeamMember: true
+        };
+        
+        // Save to the NEW user's document (so they know who their owner is)
+        await window.db.collection('users').doc(newUserId).set({
+            email: email,
+            name: name,
+            role: role,
+            ownerId: ownerId,
+            ownerEmail: ownerEmail,
+            isTeamMember: true,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Also save to owner's team members collection
+        await window.db
+            .collection('users')
+            .doc(ownerId)
+            .collection('teamMembers')
+            .doc(newUserId)
+            .set(teamMemberData);
+        
+        console.log('✅ Team member data saved to Firestore');
+        
+        // Sign out the new user and sign back in as owner
+        await window.auth.signOut();
+        
+        // Show password BEFORE re-login (in case re-login fails)
+        document.getElementById('created-email').textContent = email;
+        document.getElementById('created-password').textContent = generatedPassword;
+        document.getElementById('generated-password-display').style.display = 'block';
+        
+        // Prompt owner to re-login
+        this.showNotification('Team member created! Please sign in again with your owner account.', 'success');
+        
+        // Clear the form
+        document.getElementById('team-invite-form').reset();
+        
+        // Add to local team members array
+        this.teamMembers.push(teamMemberData);
+        this.renderTeamMembers();
+        
+    } catch (error) {
+        console.error('❌ Failed to create team member:', error);
+        if (error.code === 'auth/email-already-in-use') {
+            this.showNotification('This email is already registered. Ask them to login and you can link them.', 'error');
+        } else {
+            this.showNotification('Failed to create team member: ' + error.message, 'error');
+        }
     }
-    
-    // Send email (simulated for now - in production, use email service)
-    this.sendInvitationEmail(invitation);
-    
-    // Update UI
-    this.renderPendingInvitations();
-    
-    // Clear form
-    document.getElementById('team-invite-form').reset();
-    
-    this.showNotification(`Invitation sent to ${email}`, 'success');
+};
+
+// Legacy function - redirect to new addTeamMember
+ExpenseTracker.prototype.sendTeamInvitation = async function() {
+    return this.addTeamMember();
 };
 
 ExpenseTracker.prototype.isEmailAlreadyInvited = function(email) {
@@ -2936,7 +3061,7 @@ ExpenseTracker.prototype.saveInvitationToCloud = async function(invitation) {
     try {
         await window.db
             .collection('users')
-            .doc(this.currentUser.uid)
+            .doc(this.getDataUserId())
             .collection('invitations')
             .doc(invitation.id)
             .set(invitation);
@@ -2970,7 +3095,7 @@ ExpenseTracker.prototype.loadPendingInvitations = async function() {
     try {
         const snapshot = await window.db
             .collection('users')
-            .doc(this.currentUser.uid)
+            .doc(this.getDataUserId())
             .collection('invitations')
             .where('status', '==', 'pending')
             .get();
@@ -3155,7 +3280,7 @@ ExpenseTracker.prototype.cancelInvitation = async function(inviteId) {
         try {
             await window.db
                 .collection('users')
-                .doc(this.currentUser.uid)
+                .doc(this.getDataUserId())
                 .collection('invitations')
                 .doc(inviteId)
                 .delete();
@@ -3315,7 +3440,7 @@ ExpenseTracker.prototype.updatePermissionsTabVisibility = function() {
 ExpenseTracker.prototype.loadCustomPermissions = function() {
     if (!this.currentUser) return;
 
-    const userDocRef = window.db.collection('users').doc(this.currentUser.uid);
+    const userDocRef = window.db.collection('users').doc(this.getDataUserId());
     
     userDocRef.get().then((doc) => {
         if (doc.exists && doc.data().customPermissions) {
@@ -3335,7 +3460,7 @@ ExpenseTracker.prototype.loadCustomPermissions = function() {
 ExpenseTracker.prototype.saveCustomPermissions = function() {
     if (!this.currentUser || !this.isOwner()) return;
 
-    const userDocRef = window.db.collection('users').doc(this.currentUser.uid);
+    const userDocRef = window.db.collection('users').doc(this.getDataUserId());
     
     userDocRef.update({
         customPermissions: this.customPermissions,
