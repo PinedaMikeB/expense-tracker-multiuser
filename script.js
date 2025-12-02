@@ -650,6 +650,9 @@ class ExpenseTracker {
             console.log('✅ Data loaded from cloud');
             this.updateUI();
             
+            // Initialize team management (sets up event listeners)
+            this.initTeamManagement();
+            
         } catch (error) {
             console.error('❌ Error loading from cloud:', error);
             this.showNotification('Failed to load data from cloud. Using local data.', 'warning');
@@ -2927,6 +2930,10 @@ ExpenseTracker.prototype.generatePassword = function(length = 10) {
 
 // Add Team Member - Creates account and saves to owner's team
 ExpenseTracker.prototype.addTeamMember = async function() {
+    console.log('🚀 addTeamMember called');
+    console.log('Current user:', this.currentUser?.email);
+    console.log('Is owner:', this.isOwner());
+    
     if (!this.currentUser || !this.isOwner()) {
         this.showNotification('Only owners can add team members', 'error');
         return;
@@ -2935,6 +2942,8 @@ ExpenseTracker.prototype.addTeamMember = async function() {
     const email = document.getElementById('invite-email').value.trim().toLowerCase();
     const role = document.getElementById('invite-role').value;
     const name = document.getElementById('invite-name').value.trim();
+    
+    console.log('Form values:', { email, role, name });
     
     if (!email || !role || !name) {
         this.showNotification('Please fill in all fields', 'error');
@@ -3027,6 +3036,7 @@ ExpenseTracker.prototype.addTeamMember = async function() {
 
 // Legacy function - redirect to new addTeamMember
 ExpenseTracker.prototype.sendTeamInvitation = async function() {
+    console.log('📝 sendTeamInvitation called - redirecting to addTeamMember');
     return this.addTeamMember();
 };
 
