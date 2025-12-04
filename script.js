@@ -251,7 +251,7 @@ class ExpenseTracker {
 
         if (editingId) {
             // Update existing expense
-            const expenseIndex = this.expenses.findIndex(exp => exp.id == editingId);
+            const expenseIndex = this.expenses.findIndex(exp => String(exp.id) === String(editingId));
             if (expenseIndex !== -1) {
                 this.expenses[expenseIndex] = {
                     ...this.expenses[expenseIndex],
@@ -332,7 +332,7 @@ class ExpenseTracker {
 
         if (editingId) {
             // Update existing income
-            const incomeIndex = this.income.findIndex(inc => inc.id == editingId);
+            const incomeIndex = this.income.findIndex(inc => String(inc.id) === String(editingId));
             if (incomeIndex !== -1) {
                 this.income[incomeIndex] = {
                     ...this.income[incomeIndex],
@@ -1842,8 +1842,12 @@ class ExpenseTracker {
     }
 
     editExpense(id) {
-        const expense = this.expenses.find(exp => exp.id === id);
-        if (!expense) return;
+        console.log('editExpense called with id:', id);
+        const expense = this.expenses.find(exp => String(exp.id) === String(id));
+        if (!expense) {
+            console.error('Expense not found for id:', id);
+            return;
+        }
 
         // Fill the form with existing data
         document.getElementById('expense-description').value = expense.description;
@@ -1871,8 +1875,14 @@ class ExpenseTracker {
     }
 
     editIncome(id) {
-        const income = this.income.find(inc => inc.id === id);
-        if (!income) return;
+        console.log('editIncome called with id:', id, 'type:', typeof id);
+        const income = this.income.find(inc => String(inc.id) === String(id));
+        if (!income) {
+            console.error('Income not found for id:', id);
+            return;
+        }
+        
+        console.log('Found income to edit:', income);
 
         // Fill the form with existing data
         document.getElementById('income-description').value = income.description;
