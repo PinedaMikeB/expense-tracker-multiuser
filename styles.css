@@ -2837,3 +2837,75 @@ tbody tr:last-child td {
     font-weight: bold;
     text-decoration: underline;
 }
+
+
+/* ============================================
+   EDIT CATEGORY MODAL STYLES
+   ============================================ */
+
+.color-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.color-picker-wrapper input[type="color"] {
+    width: 60px;
+    height: 40px;
+    padding: 0;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 2px;
+}
+
+.color-picker-wrapper input[type="color"]::-webkit-color-swatch {
+    border-radius: 4px;
+    border: none;
+}
+
+.color-preview {
+    width: 100px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+    display: inline-block;
+}
+
+#edit-category-modal .modal-content {
+    max-width: 450px;
+}
+
+#edit-category-modal .form-group {
+    margin-bottom: 20px;
+}
+
+#edit-category-modal .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+#edit-category-modal .form-group input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+#edit-category-modal .form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+#edit-category-modal .form-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}

@@ -897,6 +897,44 @@
         </div>
     </div>
 
+    <!-- Edit Category Modal -->
+    <div id="edit-category-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="edit-category-modal-title">Edit Category</h2>
+                <span class="close-modal" onclick="expenseTracker.closeEditCategoryModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="edit-category-form">
+                    <input type="hidden" id="edit-category-id">
+                    <input type="hidden" id="edit-category-type">
+                    
+                    <div class="form-group">
+                        <label for="edit-category-name">Category Name</label>
+                        <input type="text" id="edit-category-name" required placeholder="Enter category name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-category-color">Color</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="edit-category-color" value="#007bff">
+                            <span id="edit-category-color-preview" class="color-preview"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row" style="margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary" onclick="expenseTracker.closeEditCategoryModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Container -->
     <div id="notification-container"></div>
 

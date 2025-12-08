@@ -1203,13 +1203,107 @@ class ExpenseTracker {
         const category = categories.find(cat => cat.id === categoryId);
         if (!category) return;
 
-        const newName = prompt(`Edit ${type} category name:`, category.name);
-        if (newName && newName.trim()) {
-            category.name = newName.trim();
-            this.saveCategoriesToCloud();
-            this.renderCategories();
-            this.loadCategories();
-            this.showNotification(`${type} category updated successfully!`, 'success');
+        // Open the edit modal
+        const modal = document.getElementById('edit-category-modal');
+        const modalTitle = document.getElementById('edit-category-modal-title');
+        const nameInput = document.getElementById('edit-category-name');
+        const colorInput = document.getElementById('edit-category-color');
+        const idInput = document.getElementById('edit-category-id');
+        const typeInput = document.getElementById('edit-category-type');
+        const colorPreview = document.getElementById('edit-category-color-preview');
+
+        // Populate form with current values
+        modalTitle.textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)} Category`;
+        nameInput.value = category.name;
+        colorInput.value = category.color;
+        idInput.value = categoryId;
+        typeInput.value = type;
+        
+        // Update color preview
+        if (colorPreview) {
+            colorPreview.style.backgroundColor = category.color;
+        }
+
+        // Show modal
+        modal.style.display = 'flex';
+
+        // Setup color preview update
+        colorInput.onchange = () => {
+            if (colorPreview) {
+                colorPreview.style.backgroundColor = colorInput.value;
+            }
+        };
+
+        // Setup form submission (remove old listener first)
+        const form = document.getElementById('edit-category-form');
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        
+        newForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveEditCategory();
+        });
+
+        // Re-setup color input listener after form clone
+        const newColorInput = document.getElementById('edit-category-color');
+        const newColorPreview = document.getElementById('edit-category-color-preview');
+        newColorInput.onchange = () => {
+            if (newColorPreview) {
+                newColorPreview.style.backgroundColor = newColorInput.value;
+            }
+        };
+    }
+
+    saveEditCategory() {
+        const nameInput = document.getElementById('edit-category-name');
+        const colorInput = document.getElementById('edit-category-color');
+        const idInput = document.getElementById('edit-category-id');
+        const typeInput = document.getElementById('edit-category-type');
+
+        const categoryId = idInput.value;
+        const type = typeInput.value;
+        const newName = nameInput.value.trim();
+        const newColor = colorInput.value;
+
+        if (!newName) {
+            this.showNotification('Category name is required', 'error');
+            return;
+        }
+
+        const categories = type === 'expense' ? this.categories : this.incomeCategories;
+        const category = categories.find(cat => cat.id === categoryId);
+        
+        if (!category) {
+            this.showNotification('Category not found', 'error');
+            return;
+        }
+
+        // Check for duplicate names (excluding current category)
+        const isDuplicate = categories.some(cat => 
+            cat.id !== categoryId && cat.name.toLowerCase() === newName.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            this.showNotification(`A ${type} category with this name already exists`, 'error');
+            return;
+        }
+
+        // Update category
+        category.name = newName;
+        category.color = newColor;
+
+        // Save and refresh
+        this.saveCategoriesToCloud();
+        this.renderCategories();
+        this.loadCategories();
+        this.closeEditCategoryModal();
+        this.showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} category updated successfully!`, 'success');
+    }
+
+    closeEditCategoryModal() {
+        const modal = document.getElementById('edit-category-modal');
+        if (modal) {
+            modal.style.display = 'none';
         }
     }
 
