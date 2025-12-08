@@ -228,6 +228,216 @@ class ExpenseTracker {
         } else {
             console.error('Petty cash form not found!');
         }
+
+        // Setup category name autocomplete
+        this.setupCategoryAutocomplete();
+    }
+
+    // Setup autocomplete for category name input
+    setupCategoryAutocomplete() {
+        const categoryNameInput = document.getElementById('category-name');
+        const suggestionsContainer = document.getElementById('category-suggestions');
+        const categoryTypeSelect = document.getElementById('category-type');
+        
+        if (!categoryNameInput || !suggestionsContainer) {
+            console.error('Category autocomplete elements not found');
+            return;
+        }
+
+        let highlightedIndex = -1;
+
+        // Filter and display suggestions as user types
+        categoryNameInput.addEventListener('input', () => {
+            const query = categoryNameInput.value.toLowerCase().trim();
+            const selectedType = categoryTypeSelect?.value || 'expense';
+            
+            // Get categories based on selected type
+            const allCategories = selectedType === 'expense' 
+                ? this.categories.map(c => ({...c, type: 'expense'}))
+                : this.incomeCategories.map(c => ({...c, type: 'income'}));
+            
+            // Also show categories from the other type for reference
+            const otherCategories = selectedType === 'expense'
+                ? this.incomeCategories.map(c => ({...c, type: 'income'}))
+                : this.categories.map(c => ({...c, type: 'expense'}));
+
+            // Combine and filter
+            const combinedCategories = [...allCategories, ...otherCategories];
+            
+            if (query === '') {
+                this.renderCategorySuggestions(combinedCategories, suggestionsContainer, categoryNameInput, selectedType);
+            } else {
+                const filtered = combinedCategories.filter(cat => 
+                    cat.name.toLowerCase().includes(query)
+                );
+                this.renderCategorySuggestions(filtered, suggestionsContainer, categoryNameInput, selectedType, query);
+            }
+            
+            highlightedIndex = -1;
+        });
+
+        // Show suggestions on focus
+        categoryNameInput.addEventListener('focus', () => {
+            const selectedType = categoryTypeSelect?.value || 'expense';
+            const allCategories = selectedType === 'expense' 
+                ? this.categories.map(c => ({...c, type: 'expense'}))
+                : this.incomeCategories.map(c => ({...c, type: 'income'}));
+            const otherCategories = selectedType === 'expense'
+                ? this.incomeCategories.map(c => ({...c, type: 'income'}))
+                : this.categories.map(c => ({...c, type: 'expense'}));
+            
+            const combinedCategories = [...allCategories, ...otherCategories];
+            const query = categoryNameInput.value.toLowerCase().trim();
+            
+            if (query === '') {
+                this.renderCategorySuggestions(combinedCategories, suggestionsContainer, categoryNameInput, selectedType);
+            } else {
+                const filtered = combinedCategories.filter(cat => 
+                    cat.name.toLowerCase().includes(query)
+                );
+                this.renderCategorySuggestions(filtered, suggestionsContainer, categoryNameInput, selectedType, query);
+            }
+        });
+
+        // Handle keyboard navigation
+        categoryNameInput.addEventListener('keydown', (e) => {
+            const items = suggestionsContainer.querySelectorAll('.autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+                this.updateHighlightedItem(items, highlightedIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                highlightedIndex = Math.max(highlightedIndex - 1, 0);
+                this.updateHighlightedItem(items, highlightedIndex);
+            } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+                e.preventDefault();
+                if (items[highlightedIndex]) {
+                    items[highlightedIndex].click();
+                }
+            } else if (e.key === 'Escape') {
+                suggestionsContainer.classList.remove('active');
+                highlightedIndex = -1;
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!categoryNameInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.classList.remove('active');
+                highlightedIndex = -1;
+            }
+        });
+
+        // Update suggestions when category type changes
+        if (categoryTypeSelect) {
+            categoryTypeSelect.addEventListener('change', () => {
+                categoryNameInput.value = '';
+                const selectedType = categoryTypeSelect.value;
+                const allCategories = selectedType === 'expense' 
+                    ? this.categories.map(c => ({...c, type: 'expense'}))
+                    : this.incomeCategories.map(c => ({...c, type: 'income'}));
+                const otherCategories = selectedType === 'expense'
+                    ? this.incomeCategories.map(c => ({...c, type: 'income'}))
+                    : this.categories.map(c => ({...c, type: 'expense'}));
+                
+                const combinedCategories = [...allCategories, ...otherCategories];
+                this.renderCategorySuggestions(combinedCategories, suggestionsContainer, categoryNameInput, selectedType);
+            });
+        }
+
+        console.log('Category autocomplete setup complete');
+    }
+
+    // Render category suggestions
+    renderCategorySuggestions(categories, container, input, selectedType, query = '') {
+        container.innerHTML = '';
+        
+        if (categories.length === 0) {
+            container.innerHTML = `
+                <div class="autocomplete-no-results">
+                    No matching categories found. This will create a new one!
+                </div>
+            `;
+            container.classList.add('active');
+            return;
+        }
+
+        // Group by type - selected type first
+        const primaryCategories = categories.filter(c => c.type === selectedType);
+        const secondaryCategories = categories.filter(c => c.type !== selectedType);
+
+        // Render primary categories (matching selected type)
+        if (primaryCategories.length > 0) {
+            primaryCategories.forEach(cat => {
+                const item = this.createCategoryItem(cat, input, container, query);
+                container.appendChild(item);
+            });
+        }
+
+        // Render secondary categories from other type (for reference)
+        if (secondaryCategories.length > 0) {
+            const divider = document.createElement('div');
+            divider.className = 'autocomplete-hint';
+            divider.innerHTML = `<small>📋 Categories from ${selectedType === 'expense' ? 'Income' : 'Expense'} (for reference)</small>`;
+            container.appendChild(divider);
+
+            secondaryCategories.forEach(cat => {
+                const item = this.createCategoryItem(cat, input, container, query);
+                item.style.opacity = '0.7';
+                container.appendChild(item);
+            });
+        }
+
+        container.classList.add('active');
+    }
+
+    // Create a single category suggestion item
+    createCategoryItem(category, input, container, query) {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        
+        // Highlight matching text
+        let displayName = category.name;
+        if (query) {
+            const regex = new RegExp(`(${query})`, 'gi');
+            displayName = category.name.replace(regex, '<span class="match-highlight">$1</span>');
+        }
+        
+        item.innerHTML = `
+            <span class="category-dot" style="background-color: ${category.color}"></span>
+            <span class="category-text">${displayName}</span>
+            <span class="category-type-badge">${category.type}</span>
+        `;
+        
+        item.addEventListener('click', () => {
+            input.value = category.name;
+            container.classList.remove('active');
+            
+            // Show warning if category already exists in current type
+            const categoryTypeSelect = document.getElementById('category-type');
+            const selectedType = categoryTypeSelect?.value || 'expense';
+            const targetCategories = selectedType === 'expense' ? this.categories : this.incomeCategories;
+            
+            if (targetCategories.some(c => c.name.toLowerCase() === category.name.toLowerCase())) {
+                this.showNotification(`"${category.name}" already exists in ${selectedType} categories!`, 'warning');
+            }
+        });
+        
+        return item;
+    }
+
+    // Update highlighted item for keyboard navigation
+    updateHighlightedItem(items, index) {
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('highlighted');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('highlighted');
+            }
+        });
     }
 
     addExpense() {

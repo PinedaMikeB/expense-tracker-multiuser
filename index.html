@@ -441,9 +441,10 @@
                                 <option value="income">Income Category</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group autocomplete-wrapper">
                             <label for="category-name">Category Name</label>
-                            <input type="text" id="category-name" required>
+                            <input type="text" id="category-name" required autocomplete="off" placeholder="Type to search existing categories...">
+                            <div id="category-suggestions" class="autocomplete-suggestions"></div>
                         </div>
                         <div class="form-group">
                             <label for="category-color">Color</label>
